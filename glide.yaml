@@ -1,0 +1,14 @@
+package: github.com/InnovaCo/broforce
+import:
+  - package: github.com/ghodss/yaml
+  - package: github.com/satori/go.uuid
+  - package: gopkg.in/alecthomas/kingpin.v2
+  - package: github.com/nats-io/go-nats
+  - package: github.com/Jeffail/gabs
+  - package: github.com/xanzy/go-gitlab
+  - package: github.com/google/go-github/github
+  - package: github.com/hashicorp/consul
+  - package: github.com/Sirupsen/logrus
+  - package: github.com/nlopes/slack
+  - package: github.com/andygrunwald/go-jira
+  - package: github.com/valyala/fasttemplate

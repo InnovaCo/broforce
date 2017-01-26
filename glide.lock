@@ -1,0 +1,69 @@
+hash: c974e1d744c0881e6a85074c60279cf43bc0d7bfa55564794b83a643c0fbd537
+updated: 2017-01-25T14:07:00.34355787+03:00
+imports:
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/andygrunwald/go-jira
+  version: cc3064046754c56f7f520e3842a1e2351152d492
+- name: github.com/fatih/structs
+  version: a720dfa8df582c51dee1b36feabb906bde1588bd
+- name: github.com/ghodss/yaml
+  version: 04f313413ffd65ce25f2541bfd2b2ceec5c0908c
+- name: github.com/google/go-github
+  version: c9c37fd6ce0247943d1aa34fc3813c62c5cb0225
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
+  subpackages:
+  - query
+- name: github.com/hashicorp/consul
+  version: 17db4a572287f2b0cf93e47339a17db522f12d45
+  subpackages:
+  - api
+- name: github.com/hashicorp/go-cleanhttp
+  version: ad28ea4487f05916463e2423a55166280e8254b5
+- name: github.com/hashicorp/serf
+  version: d3a67ab21bc8a4643fa53a3633f2d951dd50c6ca
+  subpackages:
+  - coordinate
+- name: github.com/Jeffail/gabs
+  version: 235106e63529b2743d680b351fa2677fd496ce1e
+- name: github.com/nats-io/go-nats
+  version: 79bdc34c5897b6fb2b67ac20b7a00cbd7698c72d
+  subpackages:
+  - encoders/builtin
+  - util
+- name: github.com/nats-io/nuid
+  version: 289cccf02c178dc782430d534e3c1f5b72af807f
+- name: github.com/nlopes/slack
+  version: 77d2318fa88fcba8e9561e87f951ce32d747c751
+- name: github.com/satori/go.uuid
+  version: b061729afc07e77a8aa4fad0a2fd840958f1942a
+- name: github.com/Sirupsen/logrus
+  version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
+- name: github.com/trivago/tgo
+  version: ad1dc89f5fe7ec80bc111ef9d9e93dc8bedf72ee
+  subpackages:
+  - tcontainer
+- name: github.com/valyala/fasttemplate
+  version: 3b874956e03f1636d171bda64b130f9135f42cff
+- name: github.com/xanzy/go-gitlab
+  version: 9b456c8c8b1ab0ce25ebb166a9dad455ac00900b
+- name: golang.org/x/net
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  subpackages:
+  - websocket
+- name: golang.org/x/sys
+  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
+  subpackages:
+  - unix
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: e9044be3ab2a8e11d4e1f418d12f0790d57e8d70
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports: []
