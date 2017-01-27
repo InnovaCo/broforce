@@ -14,7 +14,6 @@ import (
 
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 const (
@@ -38,20 +37,20 @@ type serveParams struct {
 	Ref      string
 }
 
-func (p *manifest) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
+func (p *manifest) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
-	p.config = cfg
-	p.bus.Subscribe(bus.GitlabHookEvent, p.handlerGitlab)
-	p.bus.Subscribe(bus.GithubHookEvent, p.handlerGithub)
+	p.config = ctx.Config
 
+	p.bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handlerGitlab, Name: "GitLabHandler"})
+	p.bus.Subscribe(bus.GithubHookEvent, bus.Context{Func: p.handlerGithub, Name: "GitHubHandler"})
 	return nil
 }
 
-func (p *manifest) handlerGitlab(e bus.Event) error {
+func (p *manifest) handlerGitlab(e bus.Event, ctx bus.Context) error {
 	var host, token = p.config.GetString("gitlab.host"), p.config.GetString("gitlab.token")
 	params := serveParams{Vars: map[string]string{"purge": "false"}}
 
-	logger.Log.Infof("%v %v", token, host)
+	ctx.Log.Infof("%v %v", token, host)
 
 	g, err := gabs.ParseJSON(e.Data)
 	if err != nil {
@@ -74,7 +73,7 @@ func (p *manifest) handlerGitlab(e bus.Event) error {
 		params.Ref = params.Vars["branch"]
 	}
 
-	logger.Log.Debugf("%v %v", token, projectId)
+	ctx.Log.Debugf("%v %v", token, projectId)
 
 	if after, ok := g.Search("after").Data().(string); ok && (strings.Compare(after, defaultSHA) == 0) {
 		params.Vars["purge"] = "true"
@@ -105,14 +104,14 @@ func (p *manifest) handlerGitlab(e bus.Event) error {
 		return err
 	}
 
-	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params)
+	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params, &ctx)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher(e.Trace, []string{"outdated"}, params)
+		p.pusher(e.Trace, []string{"outdated"}, params, &ctx)
 	}
 	return nil
 }
 
-func (p *manifest) pusher(uuid string, plugins []string, params serveParams) {
+func (p *manifest) pusher(uuid string, plugins []string, params serveParams, ctx *bus.Context) {
 	e := bus.Event{
 		Trace:   uuid,
 		Subject: bus.ServeCmdEvent,
@@ -121,16 +120,16 @@ func (p *manifest) pusher(uuid string, plugins []string, params serveParams) {
 	for _, plugin := range plugins {
 		params.Plugin = plugin
 		if err := bus.Coder(&e, params); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 			continue
 		}
 		if err := p.bus.Publish(e); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 		}
 	}
 }
 
-func (p *manifest) handlerGithub(e bus.Event) error {
+func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 	g, err := gabs.ParseJSON(e.Data)
 	if err != nil {
 		return err
@@ -139,7 +138,7 @@ func (p *manifest) handlerGithub(e bus.Event) error {
 	var host, token = p.config.GetString("github.host"), p.config.GetString("github.token")
 	params := serveParams{Vars: map[string]string{"purge": "false"}}
 
-	logger.Log.Infof("%v %v", token, host)
+	ctx.Log.Infof("%v %v", token, host)
 
 	repo, ok := g.Search("repository", "contents_url").Data().(string)
 	if !ok {
@@ -160,7 +159,7 @@ func (p *manifest) handlerGithub(e bus.Event) error {
 		params.Ref = params.Vars["branch"]
 	}
 
-	logger.Log.Debugf("%v %v", token, repo)
+	ctx.Log.Debugf("%v %v", token, repo)
 
 	if deleted, ok := g.Search("deleted").Data().(bool); ok && deleted {
 		params.Vars["purge"] = "true"
@@ -190,9 +189,9 @@ func (p *manifest) handlerGithub(e bus.Event) error {
 		return err
 	}
 
-	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params)
+	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params, &ctx)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher(e.Trace, []string{"outdated"}, params)
+		p.pusher(e.Trace, []string{"outdated"}, params, &ctx)
 	}
 	return nil
 }
@@ -217,8 +216,6 @@ func (p *manifest) uploadGitlabManifest(host, token, repo, ref, name string) ([]
 }
 
 func (p *manifest) uploadGithubManifest(host, token, repo, ref, name string) ([]byte, error) {
-	logger.Log.Debug(host, token, repo, ref, name)
-
 	resp, err := http.Get(fmt.Sprintf("%s%s?access_token=%s&ref=%s", repo, name, token, ref))
 	if err != nil {
 		return make([]byte, 0), err

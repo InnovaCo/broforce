@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
 
 	"github.com/InnovaCo/broforce/config"
@@ -50,8 +51,10 @@ type Event struct {
 }
 
 type Context struct {
-	Log    *logger.Logger
-	Config *config.ConfigData
+	Func   Handler
+	Name   string
+	Log    *log.Entry
+	Config config.ConfigData
 }
 
 type SafeParams struct {
@@ -64,10 +67,10 @@ func NewUUID() string {
 }
 
 type Task interface {
-	Run(eventBus *EventsBus, cfg config.ConfigData) error
+	Run(eventBus *EventsBus, ctx Context) error
 }
 
-type Handler func(e Event) error
+type Handler func(e Event, ctx Context) error
 
 func SafeRun(r func(eventBus *EventsBus, cfg config.ConfigData) error, sp SafeParams) func(eventBus *EventsBus, cfg config.ConfigData) error {
 	return func(eventBus *EventsBus, cfg config.ConfigData) error {
@@ -91,7 +94,7 @@ func SafeRun(r func(eventBus *EventsBus, cfg config.ConfigData) error, sp SafePa
 type adapter interface {
 	Run() error
 	Publish(e Event) error
-	Subscribe(subject string, h Handler)
+	Subscribe(subject string, ctx Context)
 }
 
 type EventsBus struct {
@@ -117,11 +120,11 @@ func (p *EventsBus) Publish(e Event) error {
 	return nil
 }
 
-func (p *EventsBus) Subscribe(subject string, h Handler) {
+func (p *EventsBus) Subscribe(subject string, ctx Context) {
 	for _, cfg := range busConfig {
 		if len(cfg.Condition.FindAllString(subject, -1)) == 1 {
 			for _, a := range cfg.Adapters {
-				a.Subscribe(subject, h)
+				a.Subscribe(subject, ctx)
 			}
 		}
 	}

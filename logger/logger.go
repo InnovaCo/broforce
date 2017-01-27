@@ -21,7 +21,7 @@ func New(cfg config.ConfigData) *logrus.Logger {
 		}
 		logrus.SetOutput(f)
 		if lvl, err := logrus.ParseLevel(cfg.GetStringOr("file.level", "info")); err == nil {
-			Log.Level = lvl
+			logrus.SetLevel(lvl)
 		}
 	}
 
@@ -48,4 +48,9 @@ func New(cfg config.ConfigData) *logrus.Logger {
 
 var Log *logrus.Logger
 
-type Logger logrus.Logger
+func Logger4Handler(name string, trace string) *logrus.Entry {
+	return logrus.WithFields(logrus.Fields{
+		"handler": name,
+		"trace":   trace,
+	})
+}

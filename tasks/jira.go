@@ -8,8 +8,6 @@ import (
 	"github.com/valyala/fasttemplate"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -26,29 +24,29 @@ type jiraResolver struct {
 	unknown  []*fasttemplate.Template
 }
 
-func (p *jiraResolver) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
+func (p *jiraResolver) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
 	var err error
-	if p.reg, err = regexp.Compile(cfg.GetStringOr("input-template", "")); err != nil {
+	if p.reg, err = regexp.Compile(ctx.Config.GetStringOr("input-template", "")); err != nil {
 		return err
 	}
 
-	p.output = fasttemplate.New(cfg.GetStringOr("output-template", ""), "{{", "}}")
+	p.output = fasttemplate.New(ctx.Config.GetStringOr("output-template", ""), "{{", "}}")
 
-	for _, t := range cfg.GetArray("unknown-template") {
+	for _, t := range ctx.Config.GetArray("unknown-template") {
 		p.unknown = append(p.unknown, fasttemplate.New(t.String(), "{{", "}}"))
 	}
 
-	p.host = cfg.GetStringOr("jira-host", "")
-	p.user = cfg.GetStringOr("jira-user", "")
-	p.password = cfg.GetStringOr("jira-password", "")
+	p.host = ctx.Config.GetStringOr("jira-host", "")
+	p.user = ctx.Config.GetStringOr("jira-user", "")
+	p.password = ctx.Config.GetStringOr("jira-password", "")
 
-	p.bus.Subscribe(bus.SlackMsgEvent, p.handler)
+	p.bus.Subscribe(bus.SlackMsgEvent, bus.Context{Func: p.handler, Name: "JiraResolverHandler"})
 
 	return nil
 }
 
-func (p *jiraResolver) handler(e bus.Event) error {
+func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 	msg := slackMessage{}
 	if err := bus.Encoder(e.Data, &msg, e.Coding); err != nil {
 		return err
@@ -69,11 +67,11 @@ func (p *jiraResolver) handler(e bus.Event) error {
 	}
 
 	for _, s := range p.reg.FindAllString(msg.Text, -1) {
-		logger.Log.Debug("Get issue:", s)
+		ctx.Log.Debug("Get issue:", s)
 		issue, _, err := jiraClient.Issue.Get(s)
 		if err != nil {
 
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 
 			if len(p.unknown) > 0 {
 				if err := bus.Coder(&event, slackMessage{
@@ -82,7 +80,7 @@ func (p *jiraResolver) handler(e bus.Event) error {
 					Text: p.unknown[rand.Intn(len(p.unknown)-1)].ExecuteString(map[string]interface{}{
 						"key": s})}); err == nil {
 					if err := p.bus.Publish(event); err != nil {
-						logger.Log.Error(err)
+						ctx.Log.Error(err)
 					}
 				} else {
 					return err
@@ -100,7 +98,7 @@ func (p *jiraResolver) handler(e bus.Event) error {
 				"summary": issue.Fields.Summary,
 				"status":  issue.Fields.Status.Name})}); err == nil {
 			if err := p.bus.Publish(event); err != nil {
-				logger.Log.Error()
+				ctx.Log.Error()
 			}
 		} else {
 			return err

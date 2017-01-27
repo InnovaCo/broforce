@@ -8,8 +8,6 @@ import (
 	"strings"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -20,7 +18,7 @@ type serve struct {
 	perm string
 }
 
-func (p serve) serveRun(params serveParams, pType string) error {
+func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context) error {
 	args := []string{params.Plugin}
 	for k, v := range params.Vars {
 		args = append(args, "--var", fmt.Sprintf("%s=%s", k, v))
@@ -32,7 +30,7 @@ func (p serve) serveRun(params serveParams, pType string) error {
 			return err
 		}
 		defer os.Remove(tmpfile.Name())
-		logger.Log.Debug("manifest\n", string(params.Manifest))
+		ctx.Log.Debug("manifest\n", string(params.Manifest))
 
 		if _, err := tmpfile.Write(params.Manifest); err != nil {
 			return err
@@ -44,25 +42,25 @@ func (p serve) serveRun(params serveParams, pType string) error {
 
 	cmd := exec.Command("serve", args...)
 
-	logger.Log.Info(cmd.Args)
+	ctx.Log.Info(cmd.Args)
 
-	cmd.Stdout = logger.Log.Out
-	cmd.Stderr = logger.Log.Out
+	cmd.Stdout = ctx.Log.Logger.Out
+	cmd.Stderr = ctx.Log.Logger.Out
 	return cmd.Run()
 }
 
-func (p *serve) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	eventBus.Subscribe(bus.ServeCmdEvent, p.handler)
-	eventBus.Subscribe(bus.ServeCmdWithDataEvent, p.handler)
+func (p *serve) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+	eventBus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+	eventBus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
 	return nil
 }
 
-func (p serve) handler(e bus.Event) error {
+func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	params := serveParams{}
 	if err := bus.Encoder(e.Data, &params, e.Coding); err != nil {
 		return err
 	}
-	if err := p.serveRun(params, e.Subject); err != nil {
+	if err := p.serveRun(params, e.Subject, &ctx); err != nil {
 		return err
 	}
 	return nil

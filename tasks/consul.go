@@ -10,7 +10,6 @@ import (
 
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 const (
@@ -38,22 +37,19 @@ func (p *consulSensor) prepareConfig(cfg config.ConfigData) []*api.Config {
 	dc := make([]*api.Config, 0)
 	for _, address := range cfg.GetArrayString("consul") {
 		c := api.DefaultConfig()
-		logger.Log.Debug(address)
 		c.Address = address
 		dc = append(dc, c)
 	}
 	return dc
 }
 
-func (p *consulSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
+func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.clientsPool = make(map[string]*api.Client)
 
-	for _, c := range p.prepareConfig(cfg) {
+	for _, c := range p.prepareConfig(ctx.Config) {
 		client, err := api.NewClient(c)
 		if err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 			continue
 		}
 		p.clientsPool[c.Address] = client
@@ -63,14 +59,14 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error
 			kv := client.KV()
 			pairs, _, err := kv.List(outdatedPrefix, nil)
 			if err != nil {
-				logger.Log.Error(err)
+				ctx.Log.Error(err)
 				continue
 			}
 			for _, key := range pairs {
-				logger.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
+				ctx.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
 				outdated := outdatedEvent{EndOfLife: -1}
 				if err := json.Unmarshal(key.Value, &outdated); err != nil {
-					logger.Log.Error(err)
+					ctx.Log.Error(err)
 				}
 				if outdated.EndOfLife == -1 {
 					continue
@@ -86,19 +82,19 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error
 
 					if err := bus.Coder(&e, outdated); err == nil {
 						if err := eventBus.Publish(e); err != nil {
-							logger.Log.Error(err)
+							ctx.Log.Error(err)
 						}
 					} else {
-						logger.Log.Error(err)
+						ctx.Log.Error(err)
 					}
 				} else {
-					logger.Log.Debugf("outdated delta: %v", outdated.EndOfLife-time.Now().UnixNano()/int64(time.Millisecond))
+					ctx.Log.Debugf("outdated delta: %v", outdated.EndOfLife-time.Now().UnixNano()/int64(time.Millisecond))
 				}
 			}
 		}
 		time.Sleep(loopInterval * time.Second)
 	}
-	logger.Log.Debug("consulSensor Complete")
+	ctx.Log.Debug("consulSensor Complete")
 	return nil
 }
 
@@ -106,13 +102,13 @@ type outdatedConsul struct {
 	bus *bus.EventsBus
 }
 
-func (p *outdatedConsul) handler(e bus.Event) error {
+func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 	event := outdatedEvent{}
 	if err := bus.Encoder(e.Data, &event, e.Coding); err != nil {
 		return err
 	}
 
-	logger.Log.Debug(event)
+	ctx.Log.Debug(event)
 
 	conf := api.DefaultConfig()
 	conf.Address = event.Address
@@ -127,7 +123,7 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 	}
 
 	if len(pairs) == 0 {
-		logger.Log.Infof("key %s empty, delete key: %s", dataPrefix+"/"+event.Key+"/", outdatedPrefix+"/"+event.Key)
+		ctx.Log.Infof("key %s empty, delete key: %s", dataPrefix+"/"+event.Key+"/", outdatedPrefix+"/"+event.Key)
 
 		if _, err := kv.Delete(outdatedPrefix+"/"+event.Key, nil); err != nil {
 			return err
@@ -135,15 +131,15 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 		return nil
 	}
 
-	logger.Log.Debug(pairs)
+	ctx.Log.Debug(pairs)
 
 	serveEvent := bus.Event{Trace: e.Trace, Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
 
 	for _, key := range pairs {
-		logger.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
+		ctx.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
 		g, err := gabs.ParseJSON(key.Value)
 		if err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 			continue
 		}
 		g.Set("true", "purge")
@@ -155,18 +151,18 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 			Manifest: g.Bytes()}
 
 		if err := bus.Coder(&serveEvent, params); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 			continue
 		}
 		if err := p.bus.Publish(serveEvent); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 		}
 	}
 	return nil
 }
 
-func (p *outdatedConsul) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
+func (p *outdatedConsul) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
-	p.bus.Subscribe(bus.OutdatedEvent, p.handler)
+	p.bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
 	return nil
 }

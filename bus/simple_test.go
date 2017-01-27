@@ -22,16 +22,17 @@ func TestSimple(t *testing.T) {
 
 	cfg := config.New(tmpfile.Name(), config.YAMLAdapter)
 	logger.New(cfg.Get("logger"))
+	ctx := Context{Log: logger.NewLogger4Handler("test", "")}
 
 	t.Run("SafeHandler", func(t *testing.T) {
 		Retry := uint32(0)
 
-		f := func(e Event) error {
+		f := func(e Event, ctx Context) error {
 			Retry++
 			return fmt.Errorf("Error number %d", Retry)
 		}
 
-		SafeHandler(f, SafeParams{Retry: 3, Delay: 1})(Event{})
+		SafeHandler(f, SafeParams{Retry: 3, Delay: 1})(Event{}, ctx)
 
 		if Retry != 4 {
 			t.Errorf("Retry %d != 4", Retry)
@@ -44,12 +45,12 @@ func TestSimple(t *testing.T) {
 		a := &simpleAdapter{}
 		a.Run()
 
-		handler := func(e Event) error {
+		handler := func(e Event, ctx Context) error {
 			got = true
 			return nil
 		}
 
-		a.Subscribe(UnknownEvent, handler)
+		a.Subscribe(UnknownEvent, Context{Func: handler, Name: "TestHandler"})
 		a.Publish(Event{Subject: UnknownEvent, Data: []byte(""), Coding: JsonCoding})
 
 		time.Sleep(1 * time.Second)

@@ -7,8 +7,6 @@ import (
 	"github.com/nlopes/slack"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -23,13 +21,13 @@ type sensorSlack struct {
 	user   *slack.User
 }
 
-func (p *sensorSlack) messageEvent(msg *slack.MessageEvent) error {
-	logger.Log.Debugf("--> %v %v %v", msg.User, msg.Channel, msg.Text)
-
+func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) error {
 	if strings.Compare(msg.User, p.user.ID) == 0 {
-		logger.Log.Debug("Ignore message")
+		ctx.Log.Debugf("Ignore message: %s", msg.Text)
 		return nil
 	}
+
+	ctx.Log.Debugf("--> %v %v %v", msg.User, msg.Channel, msg.Text)
 
 	event := bus.Event{
 		Trace:   bus.NewUUID(),
@@ -38,7 +36,7 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent) error {
 
 	if err := bus.Coder(&event, msg.Msg); err == nil {
 		if err := p.bus.Publish(event); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 		}
 	} else {
 		return err
@@ -46,13 +44,13 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent) error {
 	return nil
 }
 
-func (p *sensorSlack) postMessage(e bus.Event) error {
+func (p *sensorSlack) postMessage(e bus.Event, ctx bus.Context) error {
 	msg := slackMessage{}
 	if err := bus.Encoder(e.Data, &msg, e.Coding); err != nil {
 		return err
 	}
 
-	logger.Log.Debug("<--", msg.Channel, msg.Text)
+	ctx.Log.Debug("<--", msg.Channel, msg.Text)
 
 	params := slack.PostMessageParameters{
 		AsUser:   true,
@@ -66,34 +64,34 @@ func (p *sensorSlack) postMessage(e bus.Event) error {
 	return err
 }
 
-func (p *sensorSlack) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
+func (p *sensorSlack) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
-	p.client = slack.New(cfg.GetStringOr("token", ""))
+	p.client = slack.New(ctx.Config.GetStringOr("token", ""))
 
-	if user, err := p.client.GetUserInfo(cfg.GetString("username")); err != nil {
+	if user, err := p.client.GetUserInfo(ctx.Config.GetString("username")); err != nil {
 		return err
 	} else {
 		p.user = user
 	}
 
-	logger.Log.Infof("Ignore user: %s", p.user.ID)
+	ctx.Log.Infof("Ignore user: %s", p.user.ID)
 
 	rtm := p.client.NewRTM()
 	go rtm.ManageConnection()
 
-	p.bus.Subscribe(bus.SlackPostEvent, p.postMessage)
+	p.bus.Subscribe(bus.SlackPostEvent, bus.Context{Func: p.postMessage, Name: "SlackHandler"})
 
 	for {
 		select {
 		case msg := <-rtm.IncomingEvents:
 			switch ev := msg.Data.(type) {
 			case *slack.MessageEvent:
-				if err := p.messageEvent(ev); err != nil {
-					logger.Log.Error(err)
+				if err := p.messageEvent(ev, &ctx); err != nil {
+					ctx.Log.Error(err)
 				}
 
 			case *slack.RTMError:
-				logger.Log.Error(ev.Error())
+				ctx.Log.Error(ev.Error())
 
 			case *slack.InvalidAuthEvent:
 				return fmt.Errorf("Invalid credentials")

@@ -10,8 +10,6 @@ import (
 	"github.com/Jeffail/gabs"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -19,12 +17,13 @@ func init() {
 }
 
 const (
-	maxRepry = 10
+	maxRetry = 10
 )
 
 type hookSensor struct {
 	gitParams map[string]string
 	bus       *bus.EventsBus
+	ctx       bus.Context
 }
 
 func (p hookSensor) selector(body []byte) (string, error) {
@@ -33,14 +32,14 @@ func (p hookSensor) selector(body []byte) (string, error) {
 		return bus.UnknownEvent, err
 	}
 
-	logger.Log.Info(string(body))
+	p.ctx.Log.Info(string(body))
 
 	val, ok := g.Search("repository", "url").Data().(string)
 	if !ok {
 		return bus.UnknownEvent, fmt.Errorf("Key %s not found", "repository.url")
 	}
 
-	logger.Log.Debugf("Repo %v", val)
+	p.ctx.Log.Debugf("Repo %v", val)
 
 	switch true {
 	case strings.Index(val, "gitlab.") != -1:
@@ -53,10 +52,10 @@ func (p hookSensor) selector(body []byte) (string, error) {
 }
 
 func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
-	logger.Log.Debug(r.Header, r.ContentLength)
+	p.ctx.Log.Debug(r.Header, r.ContentLength)
 
 	if strings.Compare(p.gitParams["AuthKeyValue"], r.FormValue(p.gitParams["AuthKeyName"])) != 0 {
-		logger.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
+		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
 			p.gitParams["AuthKeyName"],
 			p.gitParams["AuthKeyValue"],
 			r.FormValue("api-key"))
@@ -65,53 +64,54 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
-		logger.Log.Error(err)
+		p.ctx.Log.Error(err)
 	} else {
 		if g, err := p.selector(body); err != nil {
-			logger.Log.Error(err)
+			p.ctx.Log.Error(err)
 		} else {
 			if err := p.bus.Publish(bus.Event{
 				Trace:   bus.NewUUID(),
 				Subject: g,
 				Coding:  bus.JsonCoding,
 				Data:    body}); err != nil {
-				logger.Log.Error(err)
+				p.ctx.Log.Error(err)
 			}
 		}
 	}
 	return
 }
 
-func (p *hookSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
+func (p *hookSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
+	p.ctx = ctx
 
-	if cfg.Exist("git") {
-		logger.Log.Debugf("add git handler with params: %v", cfg.GetMap("git"))
+	if p.ctx.Config.Exist("git") {
+		p.ctx.Log.Debugf("add git handler with params: %v", p.ctx.Config.GetMap("git"))
 		p.gitParams = make(map[string]string)
 
-		p.gitParams["AuthKeyName"] = cfg.GetStringOr("git.auth-key-name", "")
-		p.gitParams["AuthKeyValue"] = cfg.GetStringOr("git.auth-key-value", "")
-		http.HandleFunc(cfg.GetStringOr("git.url", "/git"), p.git)
+		p.gitParams["AuthKeyName"] = p.ctx.Config.GetStringOr("git.auth-key-name", "")
+		p.gitParams["AuthKeyValue"] = p.ctx.Config.GetStringOr("git.auth-key-value", "")
+		http.HandleFunc(p.ctx.Config.GetStringOr("git.url", "/git"), p.git)
 	}
 
-	logger.Log.Debug("Run")
+	p.ctx.Log.Debug("Run")
 	var err error
 	i := 0
-	delay := time.Duration(cfg.GetIntOr("delay", 10))
+	delay := time.Duration(p.ctx.Config.GetIntOr("delay", 10))
 	for {
-		if err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.GetIntOr("port", 8080)), nil); err != nil {
-			logger.Log.Debug(err)
+		if err = http.ListenAndServe(fmt.Sprintf(":%d", p.ctx.Config.GetIntOr("port", 8080)), nil); err != nil {
+			p.ctx.Log.Debug(err)
 			time.Sleep(delay * time.Second)
 			i++
-			if i >= maxRepry {
+			if i >= maxRetry {
 				i = 0
 				delay = 2 * delay
-				logger.Log.Infof("new delay %v", delay)
+				p.ctx.Log.Infof("new delay %v", delay)
 			}
 		} else {
 			break
 		}
 	}
-	logger.Log.Debug("Complete")
+	p.ctx.Log.Debug("Complete")
 	return err
 }

@@ -4,8 +4,6 @@ import (
 	"time"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -20,19 +18,19 @@ type timer struct {
 	interval time.Duration
 }
 
-func (p *timer) handler(e bus.Event) error {
+func (p *timer) handler(e bus.Event, ctx bus.Context) error {
 	tact := Tact{}
 	if err := bus.Encoder(e.Data, &tact, e.Coding); err != nil {
 		return err
 	}
 
-	logger.Log.Debugf("Tact: %d", tact.Number)
+	ctx.Log.Debugf("Tact: %d", tact.Number)
 	return nil
 }
 
-func (p *timer) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	p.interval = time.Duration(cfg.GetIntOr("interval", 1)) * time.Second
-	eventBus.Subscribe(bus.TimerEvent, p.handler)
+func (p *timer) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 1)) * time.Second
+	eventBus.Subscribe(bus.TimerEvent, bus.Context{Func: p.handler, Name: "TimerHandler"})
 
 	i := int64(0)
 	e := bus.Event{
@@ -45,13 +43,13 @@ func (p *timer) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
 		tact.Number, i = i, i+1
 
 		if err := bus.Coder(&e, tact); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 		}
 		if err := eventBus.Publish(e); err != nil {
-			logger.Log.Error(err)
+			ctx.Log.Error(err)
 		}
 		time.Sleep(p.interval)
 	}
-	logger.Log.Debug("timeSensor Complete")
+	ctx.Log.Debug("timeSensor Complete")
 	return nil
 }

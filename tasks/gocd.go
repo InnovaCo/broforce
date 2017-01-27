@@ -34,7 +34,7 @@ type gocdSheduler struct {
 	config config.ConfigData
 }
 
-func (p *gocdSheduler) handler(e bus.Event) error {
+func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 	if e.Coding != bus.JsonCoding {
 		return nil
 	}
@@ -83,9 +83,9 @@ func (p *gocdSheduler) handler(e bus.Event) error {
 	return nil
 }
 
-func (p gocdSheduler) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	p.config = cfg
-	eventBus.Subscribe(bus.GitlabHookEvent, p.handler)
+func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+	p.config = ctx.Config
+	eventBus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
 	return nil
 }
 
