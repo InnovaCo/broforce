@@ -27,8 +27,6 @@ type jiraResolver struct {
 }
 
 func (p *jiraResolver) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.bus = eventBus
 	var err error
 	if p.reg, err = regexp.Compile(cfg.GetStringOr("input-template", "")); err != nil {
@@ -56,7 +54,10 @@ func (p *jiraResolver) handler(e bus.Event) error {
 		return err
 	}
 
-	event := bus.Event{Subject: bus.SlackPostEvent, Coding: bus.JsonCoding}
+	event := bus.Event{
+		Trace:   e.Trace,
+		Subject: bus.SlackPostEvent,
+		Coding:  bus.JsonCoding}
 
 	jiraClient, err := jira.NewClient(nil, p.host)
 	if err != nil {

@@ -31,13 +31,15 @@ func (p *timer) handler(e bus.Event) error {
 }
 
 func (p *timer) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.interval = time.Duration(cfg.GetIntOr("interval", 1)) * time.Second
 	eventBus.Subscribe(bus.TimerEvent, p.handler)
 
 	i := int64(0)
-	e := bus.Event{Subject: bus.TimerEvent, Coding: bus.JsonCoding}
+	e := bus.Event{
+		Trace:   bus.NewUUID(),
+		Subject: bus.TimerEvent,
+		Coding:  bus.JsonCoding}
+
 	tact := Tact{}
 	for {
 		tact.Number, i = i, i+1

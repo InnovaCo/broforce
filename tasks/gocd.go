@@ -84,8 +84,6 @@ func (p *gocdSheduler) handler(e bus.Event) error {
 }
 
 func (p gocdSheduler) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.config = cfg
 	eventBus.Subscribe(bus.GitlabHookEvent, p.handler)
 	return nil

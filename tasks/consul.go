@@ -78,7 +78,12 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error
 				if outdated.EndOfLife < time.Now().UnixNano()/int64(time.Millisecond) {
 					outdated.Key = strings.Replace(key.Key, outdatedPrefix+"/", "", 1)
 					outdated.Address = address
-					e := bus.Event{Subject: bus.OutdatedEvent, Coding: bus.JsonCoding}
+
+					e := bus.Event{
+						Trace:   bus.NewUUID(),
+						Subject: bus.OutdatedEvent,
+						Coding:  bus.JsonCoding}
+
 					if err := bus.Coder(&e, outdated); err == nil {
 						if err := eventBus.Publish(e); err != nil {
 							logger.Log.Error(err)
@@ -132,7 +137,7 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 
 	logger.Log.Debug(pairs)
 
-	serveEvent := bus.Event{Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
+	serveEvent := bus.Event{Trace: e.Trace, Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
 
 	for _, key := range pairs {
 		logger.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
@@ -143,10 +148,12 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 		}
 		g.Set("true", "purge")
 		plugin := strings.Split(key.Key, "/")
+
 		params := serveParams{
 			Vars:     map[string]string{"purge": "true"},
 			Plugin:   plugin[len(plugin)-1],
 			Manifest: g.Bytes()}
+
 		if err := bus.Coder(&serveEvent, params); err != nil {
 			logger.Log.Error(err)
 			continue
@@ -159,8 +166,6 @@ func (p *outdatedConsul) handler(e bus.Event) error {
 }
 
 func (p *outdatedConsul) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.bus = eventBus
 	p.bus.Subscribe(bus.OutdatedEvent, p.handler)
 	return nil

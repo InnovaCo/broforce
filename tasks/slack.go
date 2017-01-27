@@ -31,7 +31,10 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent) error {
 		return nil
 	}
 
-	event := bus.Event{Subject: bus.SlackMsgEvent, Coding: bus.JsonCoding}
+	event := bus.Event{
+		Trace:   bus.NewUUID(),
+		Subject: bus.SlackMsgEvent,
+		Coding:  bus.JsonCoding}
 
 	if err := bus.Coder(&event, msg.Msg); err == nil {
 		if err := p.bus.Publish(event); err != nil {
@@ -64,7 +67,6 @@ func (p *sensorSlack) postMessage(e bus.Event) error {
 }
 
 func (p *sensorSlack) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
 	p.bus = eventBus
 	p.client = slack.New(cfg.GetStringOr("token", ""))
 

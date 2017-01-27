@@ -1,5 +1,5 @@
 hash: 316c7753c0e72b2b504e58452ddd4de87bdd14e9c5ecde9021f71a422e2864b7
-updated: 2017-01-26T19:01:46.379431607+03:00
+updated: 2017-01-27T12:03:22.042217185+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -40,7 +40,7 @@ imports:
 - name: github.com/Jeffail/gabs
   version: 235106e63529b2743d680b351fa2677fd496ce1e
 - name: github.com/nats-io/go-nats
-  version: 79bdc34c5897b6fb2b67ac20b7a00cbd7698c72d
+  version: 02d32b30762458341e44b541968fce37b8140c9b
   subpackages:
   - encoders/builtin
   - util

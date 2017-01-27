@@ -52,8 +52,6 @@ func (p serve) serveRun(params serveParams, pType string) error {
 }
 
 func (p *serve) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	eventBus.Subscribe(bus.ServeCmdEvent, p.handler)
 	eventBus.Subscribe(bus.ServeCmdWithDataEvent, p.handler)
 	return nil

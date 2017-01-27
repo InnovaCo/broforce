@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/satori/go.uuid"
+
 	"github.com/InnovaCo/broforce/config"
 	"github.com/InnovaCo/broforce/logger"
 )
@@ -41,14 +43,24 @@ Events:
 }
 
 type Event struct {
+	Trace   string
 	Subject string
 	Coding  string
 	Data    []byte
 }
 
+type Context struct {
+	Log    *logger.Logger
+	Config *config.ConfigData
+}
+
 type SafeParams struct {
 	Retry int
 	Delay time.Duration
+}
+
+func NewUUID() string {
+	return uuid.NewV4().String()
 }
 
 type Task interface {

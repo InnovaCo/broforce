@@ -39,8 +39,6 @@ type serveParams struct {
 }
 
 func (p *manifest) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.bus = eventBus
 	p.config = cfg
 	p.bus.Subscribe(bus.GitlabHookEvent, p.handlerGitlab)
@@ -107,15 +105,19 @@ func (p *manifest) handlerGitlab(e bus.Event) error {
 		return err
 	}
 
-	p.pusher([]string{"gocd.pipeline.create", "db.create"}, params)
+	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher([]string{"outdated"}, params)
+		p.pusher(e.Trace, []string{"outdated"}, params)
 	}
 	return nil
 }
 
-func (p *manifest) pusher(plugins []string, params serveParams) {
-	e := bus.Event{Subject: bus.ServeCmdEvent, Coding: bus.JsonCoding}
+func (p *manifest) pusher(uuid string, plugins []string, params serveParams) {
+	e := bus.Event{
+		Trace:   uuid,
+		Subject: bus.ServeCmdEvent,
+		Coding:  bus.JsonCoding}
+
 	for _, plugin := range plugins {
 		params.Plugin = plugin
 		if err := bus.Coder(&e, params); err != nil {
@@ -188,9 +190,9 @@ func (p *manifest) handlerGithub(e bus.Event) error {
 		return err
 	}
 
-	p.pusher([]string{"gocd.pipeline.create", "db.create"}, params)
+	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher([]string{"outdated"}, params)
+		p.pusher(e.Trace, []string{"outdated"}, params)
 	}
 	return nil
 }

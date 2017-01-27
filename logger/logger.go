@@ -47,3 +47,5 @@ func New(cfg config.ConfigData) *logrus.Logger {
 }
 
 var Log *logrus.Logger
+
+type Logger logrus.Logger

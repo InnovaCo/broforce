@@ -70,7 +70,11 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 		if g, err := p.selector(body); err != nil {
 			logger.Log.Error(err)
 		} else {
-			if err := p.bus.Publish(bus.Event{Subject: g, Coding: bus.JsonCoding, Data: body}); err != nil {
+			if err := p.bus.Publish(bus.Event{
+				Trace:   bus.NewUUID(),
+				Subject: g,
+				Coding:  bus.JsonCoding,
+				Data:    body}); err != nil {
 				logger.Log.Error(err)
 			}
 		}
@@ -79,8 +83,6 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *hookSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
-	logger.Log.Debug(cfg.String())
-
 	p.bus = eventBus
 
 	if cfg.Exist("git") {
