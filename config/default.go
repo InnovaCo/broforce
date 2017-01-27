@@ -47,7 +47,7 @@ type defaultConfigData struct {
 }
 
 func (p *defaultConfigData) String() string {
-	return p.data.Data().(string)
+	return p.data.String()
 }
 
 func (p *defaultConfigData) Exist(path string) bool {
@@ -105,6 +105,19 @@ func (p *defaultConfigData) GetArray(path string) []ConfigData {
 	}
 	for _, v := range arr {
 		out = append(out, ConfigData(&defaultConfigData{data: v}))
+	}
+	return out
+}
+
+func (p *defaultConfigData) GetArrayString(path string) []string {
+	out := make([]string, 0)
+	arr, err := p.data.Path(path).Children()
+	if err != nil {
+		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
+		return out
+	}
+	for _, v := range arr {
+		out = append(out, v.Data().(string))
 	}
 	return out
 }

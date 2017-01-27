@@ -30,6 +30,7 @@ type ConfigData interface {
 	GetInt(path string) int
 	GetIntOr(path string, defaultVal int) int
 	GetArray(path string) []ConfigData
+	GetArrayString(path string) []string
 	GetMap(path string) map[string]ConfigData
 }
 

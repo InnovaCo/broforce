@@ -36,10 +36,10 @@ type consulSensor struct {
 
 func (p *consulSensor) prepareConfig(cfg config.ConfigData) []*api.Config {
 	dc := make([]*api.Config, 0)
-	for _, address := range cfg.GetArray("consul") {
+	for _, address := range cfg.GetArrayString("consul") {
 		c := api.DefaultConfig()
-		logger.Log.Debug(address.String())
-		c.Address = address.String()
+		logger.Log.Debug(address)
+		c.Address = address
 		dc = append(dc, c)
 	}
 	return dc
