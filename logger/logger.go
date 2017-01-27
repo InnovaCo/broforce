@@ -28,14 +28,15 @@ func New(cfg config.ConfigData) *logrus.Logger {
 	if cfg.Exist("fluentd") {
 		if hook, err := logrus_fluent.New(cfg.GetStringOr("fluentd.host", "localhost"), cfg.GetIntOr("fluentd.port", 24224)); err == nil {
 			levels := []logrus.Level{}
-			for _, lvl := range cfg.GetArray("fluentd.levels") {
-				if l, err := logrus.ParseLevel(lvl.String()); err == nil {
+			for _, lvl := range cfg.GetArrayString("fluentd.levels") {
+				if l, err := logrus.ParseLevel(lvl); err == nil {
 					levels = append(levels, l)
 				}
 			}
 			Log.Debugf("fluentd levels: %v", levels)
 
 			hook.SetLevels(levels)
+			hook.SetTag(cfg.GetStringOr("tag", "broforce"))
 			logrus.AddHook(hook)
 		} else {
 			Log.Errorf("fluentd: %v", err)
