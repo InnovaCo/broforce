@@ -73,6 +73,6 @@ type cmdWrite struct {
 }
 
 func (p cmdWrite) Write(d []byte) (int, error) {
-	p.ctx.Log.Debug(d)
+	p.ctx.Log.Info(string(d))
 	return len(d), nil
 }
