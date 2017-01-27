@@ -1,5 +1,5 @@
-hash: c974e1d744c0881e6a85074c60279cf43bc0d7bfa55564794b83a643c0fbd537
-updated: 2017-01-25T14:07:00.34355787+03:00
+hash: 316c7753c0e72b2b504e58452ddd4de87bdd14e9c5ecde9021f71a422e2864b7
+updated: 2017-01-26T19:01:46.379431607+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -9,10 +9,16 @@ imports:
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/andygrunwald/go-jira
   version: cc3064046754c56f7f520e3842a1e2351152d492
+- name: github.com/evalphobia/logrus_fluent
+  version: 92541fcfe55451eaf2811be04d38e001475c294f
 - name: github.com/fatih/structs
   version: a720dfa8df582c51dee1b36feabb906bde1588bd
+- name: github.com/fluent/fluent-logger-golang
+  version: 28bdb662295c1b7aca09c1a4edbf9430010775a9
+  subpackages:
+  - fluent
 - name: github.com/ghodss/yaml
-  version: 04f313413ffd65ce25f2541bfd2b2ceec5c0908c
+  version: bea76d6a4713e18b7f5321a2b020738552def3ea
 - name: github.com/google/go-github
   version: c9c37fd6ce0247943d1aa34fc3813c62c5cb0225
   subpackages:
@@ -22,13 +28,13 @@ imports:
   subpackages:
   - query
 - name: github.com/hashicorp/consul
-  version: 17db4a572287f2b0cf93e47339a17db522f12d45
+  version: 460bf5f71ef03adba83ed2b85c083a3f57b2f38e
   subpackages:
   - api
 - name: github.com/hashicorp/go-cleanhttp
   version: ad28ea4487f05916463e2423a55166280e8254b5
 - name: github.com/hashicorp/serf
-  version: d3a67ab21bc8a4643fa53a3633f2d951dd50c6ca
+  version: f679d7594a349263f6118db40d87122d3a474e7d
   subpackages:
   - coordinate
 - name: github.com/Jeffail/gabs
@@ -42,10 +48,16 @@ imports:
   version: 289cccf02c178dc782430d534e3c1f5b72af807f
 - name: github.com/nlopes/slack
   version: 77d2318fa88fcba8e9561e87f951ce32d747c751
+- name: github.com/philhofer/fwd
+  version: 98c11a7a6ec829d672b03833c3d69a7fae1ca972
 - name: github.com/satori/go.uuid
   version: b061729afc07e77a8aa4fad0a2fd840958f1942a
 - name: github.com/Sirupsen/logrus
   version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
+- name: github.com/tinylib/msgp
+  version: 362bfb3384d53ae4d5dd745983a4d70b6d23628c
+  subpackages:
+  - msgp
 - name: github.com/trivago/tgo
   version: ad1dc89f5fe7ec80bc111ef9d9e93dc8bedf72ee
   subpackages:
@@ -53,13 +65,13 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/xanzy/go-gitlab
-  version: 9b456c8c8b1ab0ce25ebb166a9dad455ac00900b
+  version: e3c86bb0d56a53df6a15c510a8e27c695d793acd
 - name: golang.org/x/net
   version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
   - websocket
 - name: golang.org/x/sys
-  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
+  version: 9bb9f0998d48b31547d975974935ae9b48c7a03c
   subpackages:
   - unix
 - name: gopkg.in/alecthomas/kingpin.v2

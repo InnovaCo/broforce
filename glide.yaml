@@ -12,3 +12,4 @@ import:
   - package: github.com/nlopes/slack
   - package: github.com/andygrunwald/go-jira
   - package: github.com/valyala/fasttemplate
+  - package: github.com/evalphobia/logrus_fluent

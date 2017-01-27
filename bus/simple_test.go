@@ -2,15 +2,26 @@ package bus
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/InnovaCo/broforce/config"
 	"github.com/InnovaCo/broforce/logger"
 )
 
 func TestSimple(t *testing.T) {
-	logger.New(os.Stderr, "panic")
+	tmpfile, err := ioutil.TempFile("/tmp", "config_")
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	tmpfile.Close()
+	defer os.Remove(tmpfile.Name())
+
+	cfg := config.New(tmpfile.Name(), config.YAMLAdapter)
+	logger.New(cfg.Get("logger"))
 
 	t.Run("SafeHandler", func(t *testing.T) {
 		Retry := uint32(0)

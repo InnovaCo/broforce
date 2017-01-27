@@ -8,8 +8,6 @@ import (
 
 	"github.com/Jeffail/gabs"
 	"github.com/ghodss/yaml"
-
-	"github.com/InnovaCo/broforce/logger"
 )
 
 func init() {
@@ -23,7 +21,6 @@ type defaultConfig struct {
 
 func (p *defaultConfig) Init(path string) error {
 	p.path = path
-	logger.Log.Debugf("config file: %v", p.path)
 	data, err := ioutil.ReadFile(p.path)
 	if err != nil {
 		return fmt.Errorf("file `%s` not found: %v", p.path, err)
@@ -71,7 +68,7 @@ func (p *defaultConfigData) GetStringOr(path string, defaultVal string) string {
 
 func (p *defaultConfigData) GetFloat(path string) float64 {
 	if f, err := strconv.ParseFloat(p.GetString(path), 64); err != nil {
-		logger.Log.Fatal(err)
+		fmt.Errorf("Error get float: %v", err)
 		return 0
 	} else {
 		return f
@@ -80,7 +77,7 @@ func (p *defaultConfigData) GetFloat(path string) float64 {
 
 func (p *defaultConfigData) GetInt(path string) int {
 	if i, err := strconv.Atoi(p.GetString(path)); err != nil {
-		logger.Log.Fatal(err)
+		fmt.Errorf("Error get int: %v", err)
 		return 0
 	} else {
 		return i
@@ -103,7 +100,7 @@ func (p *defaultConfigData) GetArray(path string) []ConfigData {
 	out := make([]ConfigData, 0)
 	arr, err := p.data.Path(path).Children()
 	if err != nil {
-		logger.Log.Fatalf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
+		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
 		return out
 	}
 	for _, v := range arr {
@@ -116,7 +113,8 @@ func (p *defaultConfigData) GetMap(path string) map[string]ConfigData {
 	out := make(map[string]ConfigData)
 	mmap, err := p.data.Path(path).ChildrenMap()
 	if err != nil {
-		logger.Log.Fatalf("Error get map '%v' from: %v. Error: %s", path, p.data.Path(path).Data(), err)
+		fmt.Errorf("Error get map '%v' from: %v. Error: %s", path, p.data.Path(path).Data(), err)
+		return out
 	}
 
 	for k, v := range mmap {
