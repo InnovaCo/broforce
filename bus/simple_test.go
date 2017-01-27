@@ -22,7 +22,7 @@ func TestSimple(t *testing.T) {
 
 	cfg := config.New(tmpfile.Name(), config.YAMLAdapter)
 	logger.New(cfg.Get("logger"))
-	ctx := Context{Log: logger.NewLogger4Handler("test", "")}
+	ctx := Context{Log: logger.Logger4Handler("test", "")}
 
 	t.Run("SafeHandler", func(t *testing.T) {
 		Retry := uint32(0)

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/InnovaCo/broforce/bus"
+	"io"
 )
 
 func init() {
@@ -15,10 +16,10 @@ func init() {
 }
 
 type serve struct {
-	perm string
+	ctx *bus.Context
 }
 
-func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context) error {
+func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w io.Writer) error {
 	args := []string{params.Plugin}
 	for k, v := range params.Vars {
 		args = append(args, "--var", fmt.Sprintf("%s=%s", k, v))
@@ -44,8 +45,8 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context) err
 
 	ctx.Log.Info(cmd.Args)
 
-	cmd.Stdout = ctx.Log.Logger.Out
-	cmd.Stderr = ctx.Log.Logger.Out
+	cmd.Stdout = w
+	cmd.Stderr = w
 	return cmd.Run()
 }
 
@@ -60,8 +61,18 @@ func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	if err := bus.Encoder(e.Data, &params, e.Coding); err != nil {
 		return err
 	}
-	if err := p.serveRun(params, e.Subject, &ctx); err != nil {
+
+	if err := p.serveRun(params, e.Subject, &ctx, io.Writer(&cmdWrite{ctx: ctx})); err != nil {
 		return err
 	}
 	return nil
+}
+
+type cmdWrite struct {
+	ctx bus.Context
+}
+
+func (p cmdWrite) Write(d []byte) (int, error) {
+	p.ctx.Log.Debug(d)
+	return len(d), nil
 }
