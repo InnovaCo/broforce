@@ -23,9 +23,8 @@ const (
 )
 
 type hookSensor struct {
-	authKeyName  string
-	authKeyValue string
-	bus          *bus.EventsBus
+	gitParams map[string]string
+	bus       *bus.EventsBus
 }
 
 func (p hookSensor) selector(body []byte) (string, error) {
@@ -56,8 +55,11 @@ func (p hookSensor) selector(body []byte) (string, error) {
 func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	logger.Log.Debug(r.Header, r.ContentLength)
 
-	if strings.Compare(p.authKeyValue, r.FormValue(p.authKeyName)) != 0 {
-		logger.Log.Debugf("not valid %v: \"%v\"!=\"%v\"", p.authKeyName, p.authKeyValue, r.FormValue("api-key"))
+	if strings.Compare(p.gitParams["AuthKeyValue"], r.FormValue(p.gitParams["AuthKeyName"])) != 0 {
+		logger.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
+			p.gitParams["AuthKeyName"],
+			p.gitParams["AuthKeyValue"],
+			r.FormValue("api-key"))
 		return
 	}
 	defer r.Body.Close()
@@ -83,18 +85,12 @@ func (p *hookSensor) Run(eventBus *bus.EventsBus, cfg config.ConfigData) error {
 
 	if cfg.Exist("git") {
 		logger.Log.Debugf("add git handler with params: %v", cfg.GetMap("git"))
+		p.gitParams = make(map[string]string)
 
-		if val, ok := cfg.GetMap("git")["auth-key-name"]; ok {
-			p.authKeyName = val.String()
-		} else {
-			logger.Log.Error("invalid key git.auth-key-name")
-		}
-		p.authKeyValue = cfg.GetMap("git")["auth-key-value"].String()
-		http.HandleFunc(cfg.GetMap("git")["url"].String(), p.git)
+		p.gitParams["AuthKeyName"] = cfg.GetStringOr("git.auth-key-name", "")
+		p.gitParams["AuthKeyValue"] = cfg.GetStringOr("git.auth-key-value", "")
+		http.HandleFunc(cfg.GetStringOr("git.url", "/git"), p.git)
 	}
-	//p.authKeyName = cfg.GetStringOr("auth-key-name", "")
-	//p.authKeyValue = cfg.GetStringOr("auth-key-value", "")
-	//http.HandleFunc(fmt.Sprintf("%s", cfg.GetStringOr("url", "")), p.git)
 
 	logger.Log.Debug("Run")
 	var err error
