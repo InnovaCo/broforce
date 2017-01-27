@@ -47,7 +47,7 @@ type defaultConfigData struct {
 }
 
 func (p *defaultConfigData) String() string {
-	return p.data.String()
+	return p.data.Data().(string)
 }
 
 func (p *defaultConfigData) Exist(path string) bool {
