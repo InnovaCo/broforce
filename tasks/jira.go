@@ -12,11 +12,16 @@ import (
 
 	"encoding/json"
 	"github.com/InnovaCo/broforce/bus"
+	"strings"
 )
 
 func init() {
 	registry("jiraResolver", bus.Task(&jiraResolver{}))
 	registry("jiraCommenter", bus.Task(&jiraCommenter{}))
+}
+
+func createLink(issue *jira.Issue) string {
+	return strings.Replace(strings.Replace(issue.Self, "/rest/api/2/issue", "/browse", -1), issue.ID, issue.Key, -1)
 }
 
 type jiraResolver struct {
@@ -99,7 +104,7 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 			Channel: msg.Channel,
 			Text: p.output.ExecuteString(map[string]interface{}{
 				"key":     issue.Key,
-				"url":     issue.Self,
+				"url":     createLink(issue),
 				"summary": issue.Fields.Summary,
 				"status":  issue.Fields.Status.Name})}); err == nil {
 			if err := p.bus.Publish(event); err != nil {
@@ -154,7 +159,7 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 	msg := slackMessage{
 		Text: p.output.ExecuteString(map[string]interface{}{
 			"key":     issue.Key,
-			"url":     issue.Self,
+			"url":     createLink(&issue),
 			"summary": issue.Fields.Summary,
 			"status":  issue.Fields.Status.Name}),
 		Channel: p.channel,
