@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/InnovaCo/broforce/logger/fluent"
 
 	"github.com/InnovaCo/broforce/config"
+	"github.com/InnovaCo/broforce/logger/fluent"
 )
 
 func New(cfg config.ConfigData) *logrus.Logger {
