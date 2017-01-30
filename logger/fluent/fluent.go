@@ -139,7 +139,7 @@ func (hook *FluentHook) Fire(entry *logrus.Entry) error {
 		}
 		data[k] = v
 	}
-	data["timemilis"] = time.Now().UnixNano() / int64(time.Millisecond)
+	data["timemillis"] = time.Now().UnixNano() / int64(time.Millisecond)
 
 	setLevelString(entry, data)
 	tag := hook.getTagAndDel(entry, data)
