@@ -1,17 +1,22 @@
 package tasks
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
 
+	"github.com/Jeffail/gabs"
 	"github.com/andygrunwald/go-jira"
+	"github.com/nlopes/slack"
 	"github.com/valyala/fasttemplate"
 
+	"encoding/json"
 	"github.com/InnovaCo/broforce/bus"
 )
 
 func init() {
 	registry("jiraResolver", bus.Task(&jiraResolver{}))
+	registry("jiraCommenter", bus.Task(&jiraCommenter{}))
 }
 
 type jiraResolver struct {
@@ -106,4 +111,66 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 	}
 
 	return nil
+}
+
+type jiraCommenter struct {
+	bus     *bus.EventsBus
+	output  *fasttemplate.Template
+	channel string
+}
+
+func (p *jiraCommenter) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+	p.bus = eventBus
+
+	p.channel = ctx.Config.GetStringOr("channel", "")
+	p.output = fasttemplate.New(ctx.Config.GetStringOr("output-template", ""), "{{", "}}")
+	p.bus.Subscribe(bus.JiraHookEvent, bus.Context{Func: p.handler, Name: "JiraCommentHandler"})
+
+	return nil
+}
+
+func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
+	g, err := gabs.ParseJSON(e.Data)
+	if err != nil {
+		return err
+	}
+
+	if !g.ExistsP("comment") {
+		return nil
+	}
+
+	event := bus.Event{Coding: bus.JsonCoding, Subject: bus.SlackPostEvent}
+
+	issue := jira.Issue{}
+	comment := jira.Comment{}
+
+	if err := json.Unmarshal(g.Path("issue").Bytes(), &issue); err != nil {
+		return nil
+	}
+	if err := json.Unmarshal(g.Path("comment").Bytes(), &comment); err != nil {
+		return nil
+	}
+
+	msg := slackMessage{
+		Text: p.output.ExecuteString(map[string]interface{}{
+			"key":     issue.Key,
+			"url":     issue.Self,
+			"summary": issue.Fields.Summary,
+			"status":  issue.Fields.Status.Name}),
+		Channel: p.channel,
+		Attachments: []slack.Attachment{slack.Attachment{
+			Color:      "#008000",
+			Text:       "Комментарий",
+			MarkdownIn: []string{"title", "fields", "text"},
+			Fields: []slack.AttachmentField{slack.AttachmentField{
+				Title: fmt.Sprintf("от %s", comment.Author.DisplayName),
+				Value: comment.Body,
+				Short: false}}}}}
+
+	if err := bus.Coder(&event, msg); err != nil {
+		return err
+	} else {
+		p.bus.Publish(event)
+		return nil
+	}
 }

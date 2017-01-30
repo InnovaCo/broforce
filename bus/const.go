@@ -9,6 +9,7 @@ const (
 	OutdatedEvent         = "outdate"
 	SlackMsgEvent         = "slackMessage"
 	SlackPostEvent        = "slackPostMessage"
+	JiraHookEvent         = "jira"
 	UnknownEvent          = "unknown"
 )
 

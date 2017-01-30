@@ -21,9 +21,10 @@ const (
 )
 
 type hookSensor struct {
-	gitParams map[string]string
-	bus       *bus.EventsBus
-	ctx       bus.Context
+	gitParams  map[string]string
+	jiraParams map[string]string
+	bus        *bus.EventsBus
+	ctx        bus.Context
 }
 
 func (p hookSensor) selector(body []byte) (string, error) {
@@ -81,6 +82,32 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
+	p.ctx.Log.Debug(r.Header, r.ContentLength)
+
+	if strings.Compare(p.jiraParams["AuthKeyValue"], r.FormValue(p.jiraParams["AuthKeyName"])) != 0 {
+		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
+			p.jiraParams["AuthKeyName"],
+			p.jiraParams["AuthKeyValue"],
+			r.FormValue("api-key"))
+		return
+	}
+	defer r.Body.Close()
+
+	if body, err := ioutil.ReadAll(r.Body); err != nil {
+		p.ctx.Log.Error(err)
+	} else {
+		if err := p.bus.Publish(bus.Event{
+			Trace:   bus.NewUUID(),
+			Subject: bus.JiraHookEvent,
+			Coding:  bus.JsonCoding,
+			Data:    body}); err != nil {
+			p.ctx.Log.Error(err)
+		}
+	}
+	return
+}
+
 func (p *hookSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.bus = eventBus
 	p.ctx = ctx
@@ -92,6 +119,16 @@ func (p *hookSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 		p.gitParams["AuthKeyName"] = p.ctx.Config.GetStringOr("git.auth-key-name", "")
 		p.gitParams["AuthKeyValue"] = p.ctx.Config.GetStringOr("git.auth-key-value", "")
 		http.HandleFunc(p.ctx.Config.GetStringOr("git.url", "/git"), p.git)
+	}
+
+	if p.ctx.Config.Exist("jira") {
+		p.ctx.Log.Debugf("add jira handler with params: %v", p.ctx.Config.GetMap("jira"))
+		p.jiraParams = make(map[string]string)
+
+		p.jiraParams["AuthKeyName"] = p.ctx.Config.GetStringOr("jira.auth-key-name", "")
+		p.jiraParams["AuthKeyValue"] = p.ctx.Config.GetStringOr("jira.auth-key-value", "")
+
+		http.HandleFunc(p.ctx.Config.GetStringOr("jira.url", "/jira"), p.jira)
 	}
 
 	p.ctx.Log.Debug("Run")
