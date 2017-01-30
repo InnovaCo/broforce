@@ -68,7 +68,7 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 
 	for _, s := range p.reg.FindAllString(msg.Text, -1) {
 		ctx.Log.Debug("Get issue:", s)
-		issue, _, err := jiraClient.Issue.Get(s)
+		issue, _, err := jiraClient.Issue.Get(s, nil)
 		if err != nil {
 
 			ctx.Log.Error(err)

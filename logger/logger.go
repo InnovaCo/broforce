@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/evalphobia/logrus_fluent"
+	"github.com/InnovaCo/broforce/logger/fluent"
 
 	"github.com/InnovaCo/broforce/config"
 )
