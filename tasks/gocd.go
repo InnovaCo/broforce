@@ -55,6 +55,9 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 	}
 	for gitName := range p.config.GetMap("pipelines") {
 		if strings.Compare(gitName, git) == 0 {
+
+			ctx.Log.Debugf("key: %s", fmt.Sprintf("pipelines.%s.ref", gitName))
+
 			if match, _ := regexp.MatchString(p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref); !match {
 				ctx.Log.Debugf("%s not math %s", p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref)
 				return nil
