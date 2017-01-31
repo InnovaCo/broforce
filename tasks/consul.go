@@ -8,6 +8,7 @@ import (
 	"github.com/Jeffail/gabs"
 	"github.com/hashicorp/consul/api"
 
+	"fmt"
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
 )
@@ -63,7 +64,6 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 				continue
 			}
 			for _, key := range pairs {
-				ctx.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
 				outdated := outdatedEvent{EndOfLife: -1}
 				if err := json.Unmarshal(key.Value, &outdated); err != nil {
 					ctx.Log.Error(err)
@@ -72,7 +72,12 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 					continue
 				}
 				if outdated.EndOfLife < time.Now().UnixNano()/int64(time.Millisecond) {
-					outdated.Key = strings.Replace(key.Key, outdatedPrefix+"/", "", 1)
+					ctx.Log.Debugf("%s KV: %v=%v, outdated",
+						address,
+						string(key.Key),
+						string(key.Value))
+
+					outdated.Key = strings.Replace(key.Key, fmt.Sprintf("%s/", outdatedPrefix), "", 1)
 					outdated.Address = address
 
 					e := bus.Event{
@@ -88,7 +93,11 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 						ctx.Log.Error(err)
 					}
 				} else {
-					ctx.Log.Debugf("outdated delta: %v", outdated.EndOfLife-time.Now().UnixNano()/int64(time.Millisecond))
+					ctx.Log.Debugf("%s KV: %v=%v, delta: %v",
+						address,
+						string(key.Key),
+						string(key.Value),
+						outdated.EndOfLife-time.Now().UnixNano()/int64(time.Millisecond))
 				}
 			}
 		}
@@ -117,26 +126,27 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 	kv := client.KV()
-	pairs, _, err := kv.List(dataPrefix+"/"+event.Key+"/", nil)
+	pairs, _, err := kv.List(fmt.Sprintf("%s/%s/", dataPrefix, event.Key), nil)
 	if err != nil {
 		return err
 	}
 
 	if len(pairs) == 0 {
-		ctx.Log.Infof("key %s empty, delete key: %s", dataPrefix+"/"+event.Key+"/", outdatedPrefix+"/"+event.Key)
+		ctx.Log.Infof("%s: key %s empty, delete key: %s",
+			conf.Address,
+			fmt.Sprintf("%s/%s/", dataPrefix, event.Key),
+			fmt.Sprintf("%s/%s", outdatedPrefix, event.Key))
 
-		if _, err := kv.Delete(outdatedPrefix+"/"+event.Key, nil); err != nil {
+		if _, err := kv.Delete(fmt.Sprintf("%s/%s/", outdatedPrefix, event.Key), nil); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	ctx.Log.Debug(pairs)
-
 	serveEvent := bus.Event{Trace: e.Trace, Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
 
 	for _, key := range pairs {
-		ctx.Log.Debugf("KV: %v=%v", string(key.Key), string(key.Value))
+		ctx.Log.Debugf("%s purge: %v=%v", conf.Address, string(key.Key), string(key.Value))
 		g, err := gabs.ParseJSON(key.Value)
 		if err != nil {
 			ctx.Log.Error(err)

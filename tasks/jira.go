@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"strings"
 
 	"github.com/Jeffail/gabs"
 	"github.com/andygrunwald/go-jira"
@@ -12,7 +13,6 @@ import (
 
 	"encoding/json"
 	"github.com/InnovaCo/broforce/bus"
-	"strings"
 )
 
 func init() {

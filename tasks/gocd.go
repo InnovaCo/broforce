@@ -53,10 +53,12 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 	}
 	for gitName := range p.config.GetMap("pipelines") {
 		if strings.Compare(gitName, git) == 0 {
-			if match, _ := regexp.MatchString(p.config.GetString("pipelines."+gitName+".ref"), ref); !match {
+			if match, _ := regexp.MatchString(p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref); !match {
+				ctx.Log.Debugf("%s not math %s", p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref)
 				return nil
 			}
-			if before, ok := g.Path("before").Data().(string); ok && strings.Compare(before, defaultSHA) != 0 {
+			if before, ok := g.Path("before").Data().(string); ok && strings.Compare(before, defaultSHA) == 0 {
+				ctx.Log.Debugf("before == %s", g.Path("before").Data().(string))
 				return nil
 			}
 			v := gocdVars{}
@@ -67,7 +69,9 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
 			resp, err := p.goCdRequest("POST",
-				p.config.GetString("host")+"/go/api/pipelines/"+p.config.GetString("pipelines."+gitName+".pipeline")+"/schedule",
+				fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
+					p.config.GetString("host"),
+					p.config.GetString(fmt.Sprintf("pipelines.%s.pipeline", gitName))),
 				string(d),
 				map[string]string{"Confirm": "true"})
 
