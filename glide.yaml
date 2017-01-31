@@ -14,3 +14,4 @@ import:
   - package: github.com/valyala/fasttemplate
   - package: github.com/satori/go.uuid
   - package: github.com/stretchr/testify
+  - package: github.com/mhanygin/go-gocd

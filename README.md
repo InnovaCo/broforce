@@ -18,4 +18,26 @@ timer:
 
 ```
 
-Секция `hookSensor` будет передана задаче `hookSensor`. Доступ к данным осуществляется через интерфейс `ConfigData`.
+Секция `hookSensor` будет передана задаче `hookSensor`. 
+Доступ к данным осуществляется через интерфейс `ConfigData`.
+
+Секция `logger` настраивает поведение журналирования.
+
+Пример: 
+```yaml
+logger:
+  file:
+    name: /var/log/broforce.log
+    level: debug
+  fluentd:
+    tag: broforce
+    host: localhost
+    port: 24224
+    levels:
+      - debug
+      - info
+      - warning
+      - error
+      - fatal
+      - panic
+```

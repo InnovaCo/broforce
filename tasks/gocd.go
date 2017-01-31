@@ -1,28 +1,22 @@
 package tasks
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/Jeffail/gabs"
+	"github.com/mhanygin/go-gocd"
 
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
-	"time"
 )
 
 func init() {
 	registry("gocdSheduler", bus.Task(&gocdSheduler{}))
-}
-
-type goCdCredents struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
 }
 
 type gocdVars struct {
@@ -32,7 +26,9 @@ type gocdVars struct {
 
 type gocdSheduler struct {
 	config   config.ConfigData
-	credents goCdCredents
+	login    string
+	password string
+	host     string
 	times    int
 	interval time.Duration
 }
@@ -77,24 +73,14 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
 
-		GOCD:
+			client := gocd.New(p.host, p.login, p.password)
 			for i := 0; i < p.times; i++ {
-				resp, err := p.goCdRequest("POST",
-					fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
-						p.config.GetString("host"),
-						p.config.Search("pipelines", gitName, "pipeline")),
-					string(d),
-					map[string]string{"Confirm": "true"})
-
-				switch true {
-				case err != nil:
+				if err := client.SchedulePipeline(p.config.Search("pipelines", gitName, "pipeline"), d); err != nil {
 					ctx.Log.Error(err)
-				case (resp.StatusCode != http.StatusOK) && (resp.StatusCode != http.StatusAccepted):
-					ctx.Log.Errorf("Operation error: %s", resp.Status)
-				default:
-					break GOCD
+					time.Sleep(p.interval * time.Second)
+				} else {
+					break
 				}
-				time.Sleep(p.interval * time.Second)
 			}
 		}
 	}
@@ -104,26 +90,23 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.config = ctx.Config
 
+	p.host = p.config.GetString("host")
 	p.times = ctx.Config.GetIntOr("times", 100)
 	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 10))
 
 	if data, err := ioutil.ReadFile(p.config.GetString("access")); err == nil {
-		p.credents = goCdCredents{}
-		json.Unmarshal(data, &p.credents)
+		cread := struct {
+			Login    string `json:"login"`
+			Password string `json:"password"`
+		}{}
+		if err := json.Unmarshal(data, &cread); err != nil {
+			return err
+		}
+		p.login = cread.Login
+		p.password = cread.Password
 	} else {
 		return err
 	}
 	eventBus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
 	return nil
-}
-
-func (p gocdSheduler) goCdRequest(method string, resource string, body string, headers map[string]string) (*http.Response, error) {
-	req, _ := http.NewRequest(method, resource, bytes.NewReader([]byte(body)))
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	req.SetBasicAuth(p.credents.Login, p.credents.Password)
-	return http.DefaultClient.Do(req)
 }

@@ -1,5 +1,5 @@
-hash: 2d8e58714980071bb8f05ac84927065a06d31bc52b0aabe7be70be544806ecbf
-updated: 2017-01-30T09:40:51.222016062+03:00
+hash: a9eaf581830b1ba11a6177407d9a2ee18eb554fd7ebb9351b6697dcc96648af5
+updated: 2017-01-31T17:18:44.998747942+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -18,7 +18,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: bea76d6a4713e18b7f5321a2b020738552def3ea
 - name: github.com/google/go-github
-  version: c9c37fd6ce0247943d1aa34fc3813c62c5cb0225
+  version: cf19f9751b5a796eb4026cc9bfc59b7b6b513917
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -37,10 +37,12 @@ imports:
   - coordinate
 - name: github.com/Jeffail/gabs
   version: 235106e63529b2743d680b351fa2677fd496ce1e
+- name: github.com/mhanygin/go-gocd
+  version: 19f5b5789851c52def1c9f849c00f34324da1384
 - name: github.com/nats-io/go-nats
   version: ea9585611a4ab58a205b9b125ebd74c389a6b898
 - name: github.com/nlopes/slack
-  version: 248e1d53d27901137764ae625890c127bf67e7aa
+  version: 46211dd87bc6dba492b0d72f1db389cd5087d690
 - name: github.com/philhofer/fwd
   version: 98c11a7a6ec829d672b03833c3d69a7fae1ca972
 - name: github.com/satori/go.uuid
@@ -48,7 +50,7 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
 - name: github.com/stretchr/testify
-  version: 2402e8e7a02fc811447d11f881aa9746cdc57983
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
   - assert
 - name: github.com/tinylib/msgp
