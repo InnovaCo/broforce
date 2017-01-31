@@ -137,7 +137,7 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 			fmt.Sprintf("%s/%s/", dataPrefix, event.Key),
 			fmt.Sprintf("%s/%s", outdatedPrefix, event.Key))
 
-		if _, err := kv.Delete(fmt.Sprintf("%s/%s/", outdatedPrefix, event.Key), nil); err != nil {
+		if _, err := kv.Delete(fmt.Sprintf("%s/%s", outdatedPrefix, event.Key), nil); err != nil {
 			return err
 		}
 		return nil
