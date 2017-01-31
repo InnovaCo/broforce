@@ -88,7 +88,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 				switch true {
 				case err != nil:
 					ctx.Log.Error(err)
-				case resp.StatusCode != http.StatusOK:
+				case (resp.StatusCode != http.StatusOK) && (resp.StatusCode != http.StatusAccepted):
 					ctx.Log.Errorf("Operation error: %s", resp.Status)
 				default:
 					break
