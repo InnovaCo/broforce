@@ -13,7 +13,7 @@ import (
 
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
-	"github.com/InnovaCo/broforce/logger"
+	"time"
 )
 
 func init() {
@@ -33,6 +33,8 @@ type gocdVars struct {
 type gocdSheduler struct {
 	config   config.ConfigData
 	credents goCdCredents
+	times    int
+	interval time.Duration
 }
 
 func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
@@ -68,20 +70,24 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			s := strings.Split(ref, "/")
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
-			resp, err := p.goCdRequest("POST",
-				fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
-					p.config.GetString("host"),
-					p.config.GetString(fmt.Sprintf("pipelines.%s.pipeline", gitName))),
-				string(d),
-				map[string]string{"Confirm": "true"})
 
-			switch true {
-			case err != nil:
-				return err
-			case resp.StatusCode != http.StatusOK:
-				return fmt.Errorf("Operation error: %s", resp.Status)
-			default:
-				break
+			for i := 0; i < p.times; i++ {
+				resp, err := p.goCdRequest("POST",
+					fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
+						p.config.GetString("host"),
+						p.config.GetString(fmt.Sprintf("pipelines.%s.pipeline", gitName))),
+					string(d),
+					map[string]string{"Confirm": "true"})
+
+				switch true {
+				case err != nil:
+					ctx.Log.Error(err)
+				case resp.StatusCode != http.StatusOK:
+					ctx.Log.Errorf("Operation error: %s", resp.Status)
+				default:
+					break
+				}
+				time.Sleep(p.interval * time.Second)
 			}
 		}
 	}
@@ -91,13 +97,15 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.config = ctx.Config
 
+	p.times = ctx.Config.GetIntOr("times", 100)
+	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 10))
+
 	if data, err := ioutil.ReadFile(p.config.GetString("access")); err == nil {
 		p.credents = goCdCredents{}
 		json.Unmarshal(data, &p.credents)
 	} else {
 		return err
 	}
-
 	eventBus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
 	return nil
 }
@@ -110,14 +118,5 @@ func (p gocdSheduler) goCdRequest(method string, resource string, body string, h
 	req.Header.Set("Content-Type", "application/json")
 
 	req.SetBasicAuth(p.credents.Login, p.credents.Password)
-
-	logger.Log.Debugf(" --> %s %s:\n%s\n%s\n\n", method, resource, req.Header, body)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	} else {
-		logger.Log.Debugf("<-- %s\n", resp.Status)
-	}
-	return resp, nil
+	return http.DefaultClient.Do(req)
 }
