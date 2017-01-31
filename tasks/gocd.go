@@ -81,7 +81,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 				resp, err := p.goCdRequest("POST",
 					fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
 						p.config.GetString("host"),
-						p.config.GetString(fmt.Sprintf("pipelines.%s.pipeline", gitName))),
+						p.config.Search("pipelines", gitName, "pipeline")),
 					string(d),
 					map[string]string{"Confirm": "true"})
 

@@ -23,7 +23,7 @@ type sensorSlack struct {
 
 func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) error {
 	if strings.Compare(msg.User, p.user.ID) == 0 {
-		ctx.Log.Debugf("Ignore message: '%s'", msg.Text)
+		//ctx.Log.Debugf("Ignore message: '%s'", msg.Text)
 		return nil
 	}
 
