@@ -23,11 +23,11 @@ type sensorSlack struct {
 
 func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) error {
 	if strings.Compare(msg.User, p.user.ID) == 0 {
-		ctx.Log.Debugf("Ignore message: %s", msg.Text)
+		ctx.Log.Debugf("Ignore message: '%s'", msg.Text)
 		return nil
 	}
 
-	ctx.Log.Debugf("--> %v %v %v", msg.User, msg.Channel, msg.Text)
+	ctx.Log.Debugf("User: %s, channel: %s, message: '%s'", msg.User, msg.Channel, msg.Text)
 
 	event := bus.Event{
 		Trace:   bus.NewUUID(),
@@ -50,7 +50,7 @@ func (p *sensorSlack) postMessage(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	ctx.Log.Debug("<--", msg.Channel, msg.Text)
+	ctx.Log.Debugf("%s: '%s'", msg.Channel, msg.Text)
 
 	params := slack.PostMessageParameters{
 		AsUser:   true,

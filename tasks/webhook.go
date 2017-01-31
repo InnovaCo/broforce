@@ -33,8 +33,6 @@ func (p hookSensor) selector(body []byte) (string, error) {
 		return bus.UnknownEvent, err
 	}
 
-	p.ctx.Log.Info(string(body))
-
 	val, ok := g.Search("repository", "url").Data().(string)
 	if !ok {
 		return bus.UnknownEvent, fmt.Errorf("Key %s not found", "repository.url")

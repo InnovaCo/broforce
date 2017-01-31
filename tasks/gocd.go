@@ -31,7 +31,8 @@ type gocdVars struct {
 }
 
 type gocdSheduler struct {
-	config config.ConfigData
+	config   config.ConfigData
+	credents goCdCredents
 }
 
 func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
@@ -85,6 +86,14 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 
 func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.config = ctx.Config
+
+	if data, err := ioutil.ReadFile(p.config.GetString("access")); err == nil {
+		p.credents = goCdCredents{}
+		json.Unmarshal(data, &p.credents)
+	} else {
+		return err
+	}
+
 	eventBus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
 	return nil
 }
@@ -95,13 +104,8 @@ func (p gocdSheduler) goCdRequest(method string, resource string, body string, h
 		req.Header.Set(k, v)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	data, err := ioutil.ReadFile(p.config.GetString("access"))
-	if err != nil {
-		return nil, fmt.Errorf("Credentias file error: %v", err)
-	}
-	creds := &goCdCredents{}
-	json.Unmarshal(data, creds)
-	req.SetBasicAuth(creds.Login, creds.Password)
+
+	req.SetBasicAuth(p.credents.Login, p.credents.Password)
 
 	logger.Log.Debugf(" --> %s %s:\n%s\n%s\n\n", method, resource, req.Header, body)
 

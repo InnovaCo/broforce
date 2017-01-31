@@ -14,10 +14,10 @@ func init() {
 
 func SafeHandler(h Handler, sp SafeParams) Handler {
 	return func(e Event, ctx Context) error {
-		defer timeTrack(time.Now(), ctx.Name)
 
 		updateContext(e, &ctx)
 
+		defer timeTrack(time.Now(), ctx)
 		for {
 			if err := h(e, ctx); err != nil {
 				ctx.Log.Error(err)
@@ -40,9 +40,9 @@ func updateContext(e Event, ctx *Context) {
 	ctx.Log = logger.Logger4Handler(ctx.Name, e.Trace)
 }
 
-func timeTrack(start time.Time, name string) {
+func timeTrack(start time.Time, ctx Context) {
 	elapsed := time.Since(start)
-	logger.Log.Debugf("func: %s, work time: %s", name, elapsed)
+	ctx.Log.Debugf("func: %s, work time: %s", ctx.Name, elapsed)
 }
 
 type simpleAdapter struct {

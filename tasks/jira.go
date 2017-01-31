@@ -62,19 +62,18 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	event := bus.Event{
-		Trace:   e.Trace,
-		Subject: bus.SlackPostEvent,
-		Coding:  bus.JsonCoding}
-
 	jiraClient, err := jira.NewClient(nil, p.host)
 	if err != nil {
 		return err
 	}
-
 	if res, err := jiraClient.Authentication.AcquireSessionCookie(p.user, p.password); err != nil || res == false {
 		return err
 	}
+
+	event := bus.Event{
+		Trace:   e.Trace,
+		Subject: bus.SlackPostEvent,
+		Coding:  bus.JsonCoding}
 
 	for _, s := range p.reg.FindAllString(msg.Text, -1) {
 		ctx.Log.Debug("Get issue:", s)
@@ -144,8 +143,6 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 		return nil
 	}
 
-	event := bus.Event{Coding: bus.JsonCoding, Subject: bus.SlackPostEvent}
-
 	issue := jira.Issue{}
 	comment := jira.Comment{}
 
@@ -171,6 +168,11 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 				Title: fmt.Sprintf("от %s", comment.Author.DisplayName),
 				Value: comment.Body,
 				Short: false}}}}}
+
+	event := bus.Event{
+		Trace:   e.Trace,
+		Coding:  bus.JsonCoding,
+		Subject: bus.SlackPostEvent}
 
 	if err := bus.Coder(&event, msg); err != nil {
 		return err
