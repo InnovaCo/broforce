@@ -24,6 +24,7 @@ func New(path string, adapter string) Config {
 type ConfigData interface {
 	String() string
 	Exist(path string) bool
+	Search(hierarchy ...string) string
 	GetString(path string) string
 	GetStringOr(path string, defaultVal string) string
 	GetFloat(path string) float64

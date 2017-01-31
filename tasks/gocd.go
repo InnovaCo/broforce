@@ -59,10 +59,10 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			ctx.Log.Debugf("%s: %s = %s",
 				ref,
 				fmt.Sprintf("pipelines.%s.ref", gitName),
-				p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)))
+				p.config.Search(fmt.Sprintf("pipelines.%s.ref", gitName)))
 
-			if match, _ := regexp.MatchString(p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref); !match {
-				ctx.Log.Debugf("%s not math %s", p.config.GetString(fmt.Sprintf("pipelines.%s.ref", gitName)), ref)
+			if match, _ := regexp.MatchString(p.config.Search(fmt.Sprintf("pipelines.%s.ref", gitName)), ref); !match {
+				ctx.Log.Debugf("%s not math %s", p.config.Search(fmt.Sprintf("pipelines.%s.ref", gitName)), ref)
 				return nil
 			}
 			if before, ok := g.Path("before").Data().(string); ok && strings.Compare(before, defaultSHA) == 0 {

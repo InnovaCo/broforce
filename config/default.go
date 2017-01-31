@@ -58,6 +58,10 @@ func (p *defaultConfigData) GetString(path string) string {
 	return fmt.Sprintf("%v", p.data.Path(path).Data())
 }
 
+func (p *defaultConfigData) Search(hierarchy ...string) string {
+	return fmt.Sprintf("%v", p.data.Search(hierarchy ...).Data())
+}
+
 func (p *defaultConfigData) GetStringOr(path string, defaultVal string) string {
 	if p.data.ExistsP(path) {
 		return p.GetString(path)
