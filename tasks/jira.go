@@ -75,7 +75,15 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 		Subject: bus.SlackPostEvent,
 		Coding:  bus.JsonCoding}
 
+	set := make(map[string]bool)
+
 	for _, s := range p.reg.FindAllString(msg.Text, -1) {
+		if _, found := set[s]; found {
+			continue
+		} else {
+			set[s] = true
+		}
+
 		ctx.Log.Debug("Get issue:", s)
 		issue, _, err := jiraClient.Issue.Get(s, nil)
 		if err != nil {
