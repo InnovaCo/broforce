@@ -77,6 +77,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
 
+		GOCD:
 			for i := 0; i < p.times; i++ {
 				resp, err := p.goCdRequest("POST",
 					fmt.Sprintf("%s/go/api/pipelines/%s/schedule",
@@ -91,7 +92,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 				case (resp.StatusCode != http.StatusOK) && (resp.StatusCode != http.StatusAccepted):
 					ctx.Log.Errorf("Operation error: %s", resp.Status)
 				default:
-					break
+					break GOCD
 				}
 				time.Sleep(p.interval * time.Second)
 			}
