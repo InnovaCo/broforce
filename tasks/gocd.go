@@ -77,6 +77,8 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
 
+			ctx.Log.Info(d)
+
 		GOCD:
 			for i := 0; i < p.times; i++ {
 				resp, err := p.goCdRequest("POST",
@@ -90,8 +92,10 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 				case err != nil:
 					ctx.Log.Error(err)
 				case (resp.StatusCode != http.StatusOK) && (resp.StatusCode != http.StatusAccepted):
+					defer resp.Body.Close()
 					ctx.Log.Errorf("Operation error: %s", resp.Status)
 				default:
+					defer resp.Body.Close()
 					break GOCD
 				}
 				time.Sleep(p.interval * time.Second)
@@ -119,6 +123,7 @@ func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 
 func (p gocdSheduler) goCdRequest(method string, resource string, body string, headers map[string]string) (*http.Response, error) {
 	req, _ := http.NewRequest(method, resource, bytes.NewReader([]byte(body)))
+	defer req.Body.Close()
 	for k, v := range headers {
 		req.Header.Set(k, v)
 	}

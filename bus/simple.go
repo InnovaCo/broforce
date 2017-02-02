@@ -32,6 +32,7 @@ func SafeHandler(h Handler, sp SafeParams) Handler {
 				break
 			}
 		}
+
 		return nil
 	}
 }
@@ -73,6 +74,6 @@ func (p *simpleAdapter) Subscribe(subject string, ctx Context) {
 	if _, ok := p.subs[subject]; !ok {
 		p.subs[subject] = make([]Context, 0)
 	}
-	ctx.Func = SafeHandler(ctx.Func, SafeParams{Retry: 1, Delay: time.Duration(1)})
+	ctx.Func = SafeHandler(ctx.Func, SafeParams{Retry: 0, Delay: time.Duration(1)})
 	p.subs[subject] = append(p.subs[subject], ctx)
 }

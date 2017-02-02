@@ -52,6 +52,7 @@ func (p hookSensor) selector(body []byte) (string, error) {
 
 func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	p.ctx.Log.Debug(r.Header, r.ContentLength)
+	defer r.Body.Close()
 
 	if strings.Compare(p.gitParams["AuthKeyValue"], r.FormValue(p.gitParams["AuthKeyName"])) != 0 {
 		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
@@ -60,7 +61,6 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("api-key"))
 		return
 	}
-	defer r.Body.Close()
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
@@ -82,6 +82,7 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 
 func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 	p.ctx.Log.Debug(r.Header, r.ContentLength)
+	defer r.Body.Close()
 
 	if strings.Compare(p.jiraParams["AuthKeyValue"], r.FormValue(p.jiraParams["AuthKeyName"])) != 0 {
 		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
@@ -90,7 +91,6 @@ func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("api-key"))
 		return
 	}
-	defer r.Body.Close()
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
