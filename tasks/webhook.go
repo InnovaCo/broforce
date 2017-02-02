@@ -39,6 +39,7 @@ func (p hookSensor) selector(body []byte) (string, error) {
 	}
 
 	p.ctx.Log.Debugf("Repo %v", val)
+	p.ctx.Log.Debugf("Hook: %s", g.String())
 
 	switch true {
 	case strings.Index(val, "gitlab.") != -1:
@@ -68,8 +69,12 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 		if g, err := p.selector(body); err != nil {
 			p.ctx.Log.Error(err)
 		} else {
+			uuid := bus.NewUUID()
+
+			p.ctx.Log.Debugf("Push: %s", uuid)
+
 			if err := p.bus.Publish(bus.Event{
-				Trace:   bus.NewUUID(),
+				Trace:   uuid,
 				Subject: g,
 				Coding:  bus.JsonCoding,
 				Data:    body}); err != nil {

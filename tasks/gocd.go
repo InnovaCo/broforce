@@ -77,7 +77,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 			v.Branch = s[len(s)-1]
 			d, _ := json.Marshal(v)
 
-			ctx.Log.Info(d)
+			ctx.Log.Info(string(d))
 
 		GOCD:
 			for i := 0; i < p.times; i++ {
