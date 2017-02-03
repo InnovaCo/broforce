@@ -12,7 +12,6 @@ import (
 	"github.com/mhanygin/go-gocd"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
 )
 
 func init() {
@@ -25,7 +24,6 @@ type gocdVars struct {
 }
 
 type gocdSheduler struct {
-	config   config.ConfigData
 	login    string
 	password string
 	host     string
@@ -49,16 +47,16 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 	if !ok {
 		return fmt.Errorf("Key %s not found", "ref")
 	}
-	for gitName := range p.config.GetMap("pipelines") {
+	for gitName := range ctx.Config.GetMap("pipelines") {
 		if strings.Compare(gitName, git) == 0 {
 
 			ctx.Log.Debugf("%s: %s = %s",
 				ref,
 				fmt.Sprintf("pipelines.%s.ref", gitName),
-				p.config.Search("pipelines", gitName, "ref"))
+				ctx.Config.Search("pipelines", gitName, "ref"))
 
-			if match, _ := regexp.MatchString(p.config.Search("pipelines", gitName, "ref"), ref); !match {
-				ctx.Log.Debugf("%s not math %s", p.config.Search("pipelines", gitName, "ref"), ref)
+			if match, _ := regexp.MatchString(ctx.Config.Search("pipelines", gitName, "ref"), ref); !match {
+				ctx.Log.Debugf("%s not math %s", ctx.Config.Search("pipelines", gitName, "ref"), ref)
 				return nil
 			}
 			if before, ok := g.Path("before").Data().(string); ok && strings.Compare(before, defaultSHA) == 0 {
@@ -75,7 +73,7 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 
 			client := gocd.New(p.host, p.login, p.password)
 			for i := 0; i < p.times; i++ {
-				if err := client.SchedulePipeline(p.config.Search("pipelines", gitName, "pipeline"), d); err != nil {
+				if err := client.SchedulePipeline(ctx.Config.Search("pipelines", gitName, "pipeline"), d); err != nil {
 					ctx.Log.Error(err)
 					time.Sleep(p.interval * time.Second)
 				} else {
@@ -87,14 +85,12 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 	return nil
 }
 
-func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.config = ctx.Config
-
-	p.host = p.config.GetString("host")
+func (p *gocdSheduler) Run(ctx bus.Context) error {
+	p.host = ctx.Config.GetString("host")
 	p.times = ctx.Config.GetIntOr("times", 100)
 	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 10))
 
-	if data, err := ioutil.ReadFile(p.config.GetString("access")); err == nil {
+	if data, err := ioutil.ReadFile(ctx.Config.GetString("access")); err == nil {
 		cread := struct {
 			Login    string `json:"login"`
 			Password string `json:"password"`
@@ -107,6 +103,6 @@ func (p *gocdSheduler) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	} else {
 		return err
 	}
-	eventBus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
+	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
 	return nil
 }

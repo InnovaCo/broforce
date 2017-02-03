@@ -1,5 +1,5 @@
 hash: a9eaf581830b1ba11a6177407d9a2ee18eb554fd7ebb9351b6697dcc96648af5
-updated: 2017-02-03T10:48:35.181363486+03:00
+updated: 2017-02-03T14:23:07.905683617+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -64,7 +64,7 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/xanzy/go-gitlab
-  version: e3c86bb0d56a53df6a15c510a8e27c695d793acd
+  version: 969aa6e79f5536dda9d6bae08a580afdfd3ea514
 - name: golang.org/x/net
   version: 007e530097ad7f954752df63046b4036f98ba6a6
   subpackages:

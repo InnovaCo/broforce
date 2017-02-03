@@ -13,7 +13,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 
 	"github.com/InnovaCo/broforce/bus"
-	"github.com/InnovaCo/broforce/config"
 )
 
 const (
@@ -26,8 +25,6 @@ func init() {
 }
 
 type manifest struct {
-	config config.ConfigData
-	bus    *bus.EventsBus
 }
 
 type serveParams struct {
@@ -37,17 +34,14 @@ type serveParams struct {
 	Ref      string
 }
 
-func (p *manifest) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
-	p.config = ctx.Config
-
-	p.bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handlerGitlab, Name: "GitLabHandler"})
-	p.bus.Subscribe(bus.GithubHookEvent, bus.Context{Func: p.handlerGithub, Name: "GitHubHandler"})
+func (p *manifest) Run(ctx bus.Context) error {
+	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handlerGitlab, Name: "GitLabHandler"})
+	ctx.Bus.Subscribe(bus.GithubHookEvent, bus.Context{Func: p.handlerGithub, Name: "GitHubHandler"})
 	return nil
 }
 
 func (p *manifest) handlerGitlab(e bus.Event, ctx bus.Context) error {
-	var host, token = p.config.GetString("gitlab.host"), p.config.GetString("gitlab.token")
+	var host, token = ctx.Config.GetString("gitlab.host"), ctx.Config.GetString("gitlab.token")
 	params := serveParams{Vars: map[string]string{"purge": "false"}}
 
 	ctx.Log.Infof("%v %v", token, host)
@@ -123,7 +117,7 @@ func (p *manifest) pusher(uuid string, plugins []string, params serveParams, ctx
 			ctx.Log.Error(err)
 			continue
 		}
-		if err := p.bus.Publish(e); err != nil {
+		if err := ctx.Bus.Publish(e); err != nil {
 			ctx.Log.Error(err)
 		}
 	}
@@ -135,7 +129,7 @@ func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	var host, token = p.config.GetString("github.host"), p.config.GetString("github.token")
+	var host, token = ctx.Config.GetString("github.host"), ctx.Config.GetString("github.token")
 	params := serveParams{Vars: map[string]string{"purge": "false"}}
 
 	ctx.Log.Infof("%v %v", token, host)

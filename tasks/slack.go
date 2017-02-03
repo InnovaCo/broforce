@@ -16,7 +16,6 @@ func init() {
 type slackMessage slack.Msg
 
 type sensorSlack struct {
-	bus    *bus.EventsBus
 	client *slack.Client
 	user   *slack.User
 }
@@ -39,7 +38,7 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) er
 	ctx.Log.Debugf("Push: %s", uuid)
 
 	if err := bus.Coder(&event, msg.Msg); err == nil {
-		if err := p.bus.Publish(event); err != nil {
+		if err := ctx.Bus.Publish(event); err != nil {
 			ctx.Log.Error(err)
 		}
 	} else {
@@ -68,8 +67,7 @@ func (p *sensorSlack) postMessage(e bus.Event, ctx bus.Context) error {
 	return err
 }
 
-func (p *sensorSlack) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
+func (p *sensorSlack) Run(ctx bus.Context) error {
 	p.client = slack.New(ctx.Config.GetStringOr("token", ""))
 
 	if user, err := p.client.GetUserInfo(ctx.Config.GetString("username")); err != nil {
@@ -83,7 +81,7 @@ func (p *sensorSlack) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	rtm := p.client.NewRTM()
 	go rtm.ManageConnection()
 
-	p.bus.Subscribe(bus.SlackPostEvent, bus.Context{Func: p.postMessage, Name: "SlackHandler"})
+	ctx.Bus.Subscribe(bus.SlackPostEvent, bus.Context{Func: p.postMessage, Name: "SlackHandler"})
 
 	for {
 		select {

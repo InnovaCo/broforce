@@ -44,7 +44,7 @@ func (p *consulSensor) prepareConfig(cfg config.ConfigData) []*api.Config {
 	return dc
 }
 
-func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+func (p *consulSensor) Run(ctx bus.Context) error {
 	p.clientsPool = make(map[string]*api.Client)
 
 	for _, c := range p.prepareConfig(ctx.Config) {
@@ -86,7 +86,7 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 						Coding:  bus.JsonCoding}
 
 					if err := bus.Coder(&e, outdated); err == nil {
-						if err := eventBus.Publish(e); err != nil {
+						if err := ctx.Bus.Publish(e); err != nil {
 							ctx.Log.Error(err)
 						}
 					} else {
@@ -108,7 +108,6 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 }
 
 type outdatedConsul struct {
-	bus *bus.EventsBus
 }
 
 func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
@@ -164,15 +163,14 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 			ctx.Log.Error(err)
 			continue
 		}
-		if err := p.bus.Publish(serveEvent); err != nil {
+		if err := ctx.Bus.Publish(serveEvent); err != nil {
 			ctx.Log.Error(err)
 		}
 	}
 	return nil
 }
 
-func (p *outdatedConsul) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
-	p.bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
+func (p *outdatedConsul) Run(ctx bus.Context) error {
+	ctx.Bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
 	return nil
 }

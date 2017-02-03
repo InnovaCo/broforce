@@ -16,7 +16,6 @@ func init() {
 }
 
 type serve struct {
-	ctx *bus.Context
 }
 
 func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w io.Writer) error {
@@ -50,9 +49,9 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w i
 	return cmd.Run()
 }
 
-func (p *serve) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	eventBus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
-	eventBus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+func (p *serve) Run(ctx bus.Context) error {
+	ctx.Bus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+	ctx.Bus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
 	return nil
 }
 

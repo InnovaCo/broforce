@@ -28,9 +28,9 @@ func (p *timer) handler(e bus.Event, ctx bus.Context) error {
 	return nil
 }
 
-func (p *timer) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+func (p *timer) Run(ctx bus.Context) error {
 	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 1)) * time.Second
-	eventBus.Subscribe(bus.TimerEvent, bus.Context{Func: p.handler, Name: "TimerHandler"})
+	ctx.Bus.Subscribe(bus.TimerEvent, bus.Context{Func: p.handler, Name: "TimerHandler"})
 
 	i := int64(0)
 	e := bus.Event{
@@ -45,7 +45,7 @@ func (p *timer) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 		if err := bus.Coder(&e, tact); err != nil {
 			ctx.Log.Error(err)
 		}
-		if err := eventBus.Publish(e); err != nil {
+		if err := ctx.Bus.Publish(e); err != nil {
 			ctx.Log.Error(err)
 		}
 		time.Sleep(p.interval)
