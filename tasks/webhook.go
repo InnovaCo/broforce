@@ -100,8 +100,12 @@ func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
 	} else {
+		uuid := bus.NewUUID()
+
+		p.ctx.Log.Debugf("Push: %s", uuid)
+
 		if err := p.bus.Publish(bus.Event{
-			Trace:   bus.NewUUID(),
+			Trace:   uuid,
 			Subject: bus.JiraHookEvent,
 			Coding:  bus.JsonCoding,
 			Data:    body}); err != nil {

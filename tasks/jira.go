@@ -150,10 +150,8 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 	if !g.ExistsP("comment") {
 		return nil
 	}
-
 	issue := jira.Issue{}
 	comment := jira.Comment{}
-
 	if err := json.Unmarshal(g.Path("issue").Bytes(), &issue); err != nil {
 		return nil
 	}
@@ -173,7 +171,7 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 			Text:       "Комментарий",
 			MarkdownIn: []string{"title", "fields", "text"},
 			Fields: []slack.AttachmentField{slack.AttachmentField{
-				Title: fmt.Sprintf("от %s", comment.Author.DisplayName),
+				Title: fmt.Sprintf("от %s:", comment.Author.DisplayName),
 				Value: comment.Body,
 				Short: false}}}}}
 
