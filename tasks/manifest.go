@@ -220,12 +220,11 @@ func (p *manifest) uploadGithubManifest(host, token, repo, ref, name string) ([]
 	if err != nil {
 		return make([]byte, 0), err
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return make([]byte, 0), fmt.Errorf("Error code: %v", resp.StatusCode)
 	}
-
-	defer resp.Body.Close()
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

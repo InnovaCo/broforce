@@ -13,7 +13,7 @@ import (
 	"github.com/InnovaCo/broforce/tasks"
 )
 
-var version = "0.3.0"
+var version = "0.4.0"
 
 func main() {
 	cfgPath := kingpin.Flag("config", "Path to config.yml file.").Default("config.yml").String()

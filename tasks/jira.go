@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -11,7 +12,6 @@ import (
 	"github.com/nlopes/slack"
 	"github.com/valyala/fasttemplate"
 
-	"encoding/json"
 	"github.com/InnovaCo/broforce/bus"
 )
 

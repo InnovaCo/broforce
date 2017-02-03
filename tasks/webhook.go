@@ -39,6 +39,7 @@ func (p hookSensor) selector(body []byte) (string, error) {
 	}
 
 	p.ctx.Log.Debugf("Repo %v", val)
+	p.ctx.Log.Debugf("Hook: %s", g.String())
 
 	switch true {
 	case strings.Index(val, "gitlab.") != -1:
@@ -52,6 +53,7 @@ func (p hookSensor) selector(body []byte) (string, error) {
 
 func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	p.ctx.Log.Debug(r.Header, r.ContentLength)
+	defer r.Body.Close()
 
 	if strings.Compare(p.gitParams["AuthKeyValue"], r.FormValue(p.gitParams["AuthKeyName"])) != 0 {
 		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
@@ -60,7 +62,6 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("api-key"))
 		return
 	}
-	defer r.Body.Close()
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
@@ -68,8 +69,12 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 		if g, err := p.selector(body); err != nil {
 			p.ctx.Log.Error(err)
 		} else {
+			uuid := bus.NewUUID()
+
+			p.ctx.Log.Debugf("Push: %s", uuid)
+
 			if err := p.bus.Publish(bus.Event{
-				Trace:   bus.NewUUID(),
+				Trace:   uuid,
 				Subject: g,
 				Coding:  bus.JsonCoding,
 				Data:    body}); err != nil {
@@ -82,6 +87,7 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 
 func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 	p.ctx.Log.Debug(r.Header, r.ContentLength)
+	defer r.Body.Close()
 
 	if strings.Compare(p.jiraParams["AuthKeyValue"], r.FormValue(p.jiraParams["AuthKeyName"])) != 0 {
 		p.ctx.Log.Debugf("not valid %v: \"%v\"!=\"%v\"",
@@ -90,7 +96,6 @@ func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 			r.FormValue("api-key"))
 		return
 	}
-	defer r.Body.Close()
 
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
