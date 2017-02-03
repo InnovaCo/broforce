@@ -6,16 +6,16 @@ import (
 	"testing"
 )
 
-func TestCoder(t *testing.T) {
+func TestEvent(t *testing.T) {
 	type data struct {
 		Param1 int               `json:"param1"`
 		Param2 []string          `json:"param2"`
 		Param3 map[string]string `json:"param3"`
 	}
 
-	t.Run("CoderJson", func(t *testing.T) {
+	t.Run("Marshal", func(t *testing.T) {
 		e := Event{Subject: UnknownEvent, Coding: JsonCoding}
-		if err := Coder(&e, data{
+		if err := e.Marshal(data{
 			Param1: 1,
 			Param2: []string{"val1", "val2"},
 			Param3: map[string]string{"pp3": "val1"}}); err != nil {
@@ -31,7 +31,7 @@ func TestCoder(t *testing.T) {
 		}
 	})
 
-	t.Run("EncoderJson", func(t *testing.T) {
+	t.Run("Unmarshal", func(t *testing.T) {
 		e := Event{
 			Subject: UnknownEvent,
 			Coding:  JsonCoding,
@@ -39,7 +39,7 @@ func TestCoder(t *testing.T) {
 
 		d := data{}
 
-		if err := Encoder(e.Data, &d, e.Coding); err != nil {
+		if err := e.Unmarshal(&d); err != nil {
 			t.Error(err)
 			t.Fail()
 		}

@@ -20,7 +20,7 @@ type timer struct {
 
 func (p *timer) handler(e bus.Event, ctx bus.Context) error {
 	tact := Tact{}
-	if err := bus.Encoder(e.Data, &tact, e.Coding); err != nil {
+	if err := e.Unmarshal(&tact); err != nil {
 		return err
 	}
 
@@ -33,19 +33,16 @@ func (p *timer) Run(ctx bus.Context) error {
 	ctx.Bus.Subscribe(bus.TimerEvent, bus.Context{Func: p.handler, Name: "TimerHandler"})
 
 	i := int64(0)
-	e := bus.Event{
-		Trace:   bus.NewUUID(),
-		Subject: bus.TimerEvent,
-		Coding:  bus.JsonCoding}
+	event := bus.NewEvent(bus.NewUUID(), bus.TimerEvent, bus.JsonCoding)
 
 	tact := Tact{}
 	for {
 		tact.Number, i = i, i+1
 
-		if err := bus.Coder(&e, tact); err != nil {
+		if err := event.Marshal(tact); err != nil {
 			ctx.Log.Error(err)
 		}
-		if err := ctx.Bus.Publish(e); err != nil {
+		if err := ctx.Bus.Publish(*event); err != nil {
 			ctx.Log.Error(err)
 		}
 		time.Sleep(p.interval)

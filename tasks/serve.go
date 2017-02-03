@@ -2,13 +2,13 @@ package tasks
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/InnovaCo/broforce/bus"
-	"io"
 )
 
 func init() {
@@ -57,7 +57,7 @@ func (p *serve) Run(ctx bus.Context) error {
 
 func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	params := serveParams{}
-	if err := bus.Encoder(e.Data, &params, e.Coding); err != nil {
+	if err := e.Unmarshal(&params); err != nil {
 		return err
 	}
 

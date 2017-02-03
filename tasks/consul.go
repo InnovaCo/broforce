@@ -2,13 +2,13 @@ package tasks
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/hashicorp/consul/api"
 
-	"fmt"
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
 )
@@ -79,14 +79,9 @@ func (p *consulSensor) Run(ctx bus.Context) error {
 
 					outdated.Key = strings.Replace(key.Key, fmt.Sprintf("%s/", outdatedPrefix), "", 1)
 					outdated.Address = address
-
-					e := bus.Event{
-						Trace:   bus.NewUUID(),
-						Subject: bus.OutdatedEvent,
-						Coding:  bus.JsonCoding}
-
-					if err := bus.Coder(&e, outdated); err == nil {
-						if err := ctx.Bus.Publish(e); err != nil {
+					event := bus.NewEvent(bus.NewUUID(), bus.OutdatedEvent, bus.JsonCoding)
+					if err := event.Marshal(outdated); err == nil {
+						if err := ctx.Bus.Publish(*event); err != nil {
 							ctx.Log.Error(err)
 						}
 					} else {
@@ -112,7 +107,7 @@ type outdatedConsul struct {
 
 func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 	event := outdatedEvent{}
-	if err := bus.Encoder(e.Data, &event, e.Coding); err != nil {
+	if err := e.Unmarshal(&event); err != nil {
 		return err
 	}
 
@@ -142,7 +137,7 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 		return nil
 	}
 
-	serveEvent := bus.Event{Trace: e.Trace, Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
+	serveEvent := bus.NewEvent(e.Trace, bus.ServeCmdWithDataEvent, bus.JsonCoding)
 
 	for _, key := range pairs {
 		ctx.Log.Debugf("%s purge: %v=%v", conf.Address, string(key.Key), string(key.Value))
@@ -159,11 +154,11 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 			Plugin:   plugin[len(plugin)-1],
 			Manifest: g.Bytes()}
 
-		if err := bus.Coder(&serveEvent, params); err != nil {
+		if err := serveEvent.Marshal(params); err != nil {
 			ctx.Log.Error(err)
 			continue
 		}
-		if err := ctx.Bus.Publish(serveEvent); err != nil {
+		if err := ctx.Bus.Publish(*serveEvent); err != nil {
 			ctx.Log.Error(err)
 		}
 	}

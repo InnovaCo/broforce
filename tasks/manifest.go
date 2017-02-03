@@ -106,18 +106,14 @@ func (p *manifest) handlerGitlab(e bus.Event, ctx bus.Context) error {
 }
 
 func (p *manifest) pusher(uuid string, plugins []string, params serveParams, ctx *bus.Context) {
-	e := bus.Event{
-		Trace:   uuid,
-		Subject: bus.ServeCmdEvent,
-		Coding:  bus.JsonCoding}
-
+	event := bus.NewEvent(uuid, bus.ServeCmdEvent, bus.JsonCoding)
 	for _, plugin := range plugins {
 		params.Plugin = plugin
-		if err := bus.Coder(&e, params); err != nil {
+		if err := event.Marshal(params); err != nil {
 			ctx.Log.Error(err)
 			continue
 		}
-		if err := ctx.Bus.Publish(e); err != nil {
+		if err := ctx.Bus.Publish(*event); err != nil {
 			ctx.Log.Error(err)
 		}
 	}

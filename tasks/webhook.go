@@ -65,7 +65,7 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
 	} else {
-		if g, err := p.selector(body); err != nil {
+		if gitType, err := p.selector(body); err != nil {
 			p.ctx.Log.Error(err)
 		} else {
 			uuid := bus.NewUUID()
@@ -74,7 +74,7 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 
 			if err := p.ctx.Bus.Publish(bus.Event{
 				Trace:   uuid,
-				Subject: g,
+				Subject: gitType,
 				Coding:  bus.JsonCoding,
 				Data:    body}); err != nil {
 				p.ctx.Log.Error(err)

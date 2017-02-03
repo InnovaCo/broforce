@@ -29,27 +29,20 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) er
 	ctx.Log.Debugf("User: %s, channel: %s, message: '%s'", msg.User, msg.Channel, msg.Text)
 
 	uuid := bus.NewUUID()
-
-	event := bus.Event{
-		Trace:   uuid,
-		Subject: bus.SlackMsgEvent,
-		Coding:  bus.JsonCoding}
+	event := bus.NewEvent(uuid, bus.SlackMsgEvent, bus.JsonCoding)
 
 	ctx.Log.Debugf("Push: %s", uuid)
 
-	if err := bus.Coder(&event, msg.Msg); err == nil {
-		if err := ctx.Bus.Publish(event); err != nil {
-			ctx.Log.Error(err)
-		}
+	if err := event.Marshal(msg.Msg); err == nil {
+		return ctx.Bus.Publish(*event)
 	} else {
 		return err
 	}
-	return nil
 }
 
 func (p *sensorSlack) postMessage(e bus.Event, ctx bus.Context) error {
 	msg := slackMessage{}
-	if err := bus.Encoder(e.Data, &msg, e.Coding); err != nil {
+	if err := e.Unmarshal(&msg); err != nil {
 		return err
 	}
 

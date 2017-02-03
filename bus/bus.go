@@ -43,13 +43,6 @@ Events:
 	}
 }
 
-type Event struct {
-	Trace   string
-	Subject string
-	Coding  string
-	Data    []byte
-}
-
 type Context struct {
 	Func   Handler
 	Name   string
