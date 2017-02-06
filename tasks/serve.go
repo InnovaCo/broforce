@@ -60,18 +60,21 @@ func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	if err := e.Unmarshal(&params); err != nil {
 		return err
 	}
+	w := newCmdWrite()
+	defer ctx.Log.Info(string(w.Buffer))
 
-	if err := p.serveRun(params, e.Subject, &ctx, io.Writer(&cmdWrite{ctx: ctx})); err != nil {
-		return err
-	}
-	return nil
+	return p.serveRun(params, e.Subject, &ctx, io.Writer(w))
+}
+
+func newCmdWrite() *cmdWrite {
+	return &cmdWrite{Buffer: make([]byte, 0)}
 }
 
 type cmdWrite struct {
-	ctx bus.Context
+	Buffer []byte
 }
 
-func (p cmdWrite) Write(d []byte) (int, error) {
-	p.ctx.Log.Info(string(d))
+func (p *cmdWrite) Write(d []byte) (int, error) {
+	p.Buffer = append(p.Buffer, d...)
 	return len(d), nil
 }
