@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -60,21 +61,8 @@ func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	if err := e.Unmarshal(&params); err != nil {
 		return err
 	}
-	w := newCmdWrite()
-	defer ctx.Log.Info(string(w.Buffer))
+	buffer := bytes.NewBuffer(make([]byte, 0))
+	defer ctx.Log.Info(buffer.String())
 
-	return p.serveRun(params, e.Subject, &ctx, io.Writer(w))
-}
-
-func newCmdWrite() *cmdWrite {
-	return &cmdWrite{Buffer: make([]byte, 0)}
-}
-
-type cmdWrite struct {
-	Buffer []byte
-}
-
-func (p *cmdWrite) Write(d []byte) (int, error) {
-	p.Buffer = append(p.Buffer, d...)
-	return len(d), nil
+	return p.serveRun(params, e.Subject, &ctx, io.Writer(buffer))
 }
