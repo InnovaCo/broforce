@@ -70,7 +70,7 @@ func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 	buffer := bytes.NewBuffer(make([]byte, 0))
-	defer ctx.Log.Info(buffer.String())
-
-	return p.serveRun(params, e.Subject, &ctx, io.Writer(buffer))
+	err := p.serveRun(params, e.Subject, &ctx, io.Writer(buffer))
+	ctx.Log.Info(buffer.String())
+	return err
 }
