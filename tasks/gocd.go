@@ -103,6 +103,10 @@ func (p *gocdSheduler) Run(ctx bus.Context) error {
 	} else {
 		return err
 	}
-	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handler, Name: "GoCDShedulerHandler"})
+	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{
+		Func: p.handler,
+		Name: "GoCDShedulerHandler",
+		Bus: ctx.Bus,
+		Config: ctx.Config})
 	return nil
 }

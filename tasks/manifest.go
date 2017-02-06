@@ -35,8 +35,16 @@ type serveParams struct {
 }
 
 func (p *manifest) Run(ctx bus.Context) error {
-	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{Func: p.handlerGitlab, Name: "GitLabHandler"})
-	ctx.Bus.Subscribe(bus.GithubHookEvent, bus.Context{Func: p.handlerGithub, Name: "GitHubHandler"})
+	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{
+		Func:   p.handlerGitlab,
+		Name:   "GitLabHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
+	ctx.Bus.Subscribe(bus.GithubHookEvent, bus.Context{
+		Func:   p.handlerGithub,
+		Name:   "GitHubHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 	return nil
 }
 
@@ -171,7 +179,6 @@ func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 			if !m {
 				return fmt.Errorf("%s not change", manifestName)
 			}
-
 		}
 	}
 

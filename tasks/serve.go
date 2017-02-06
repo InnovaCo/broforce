@@ -51,8 +51,16 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w i
 }
 
 func (p *serve) Run(ctx bus.Context) error {
-	ctx.Bus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
-	ctx.Bus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+	ctx.Bus.Subscribe(bus.ServeCmdEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "ServeHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
+	ctx.Bus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "ServeHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 	return nil
 }
 

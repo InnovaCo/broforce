@@ -74,7 +74,11 @@ func (p *sensorSlack) Run(ctx bus.Context) error {
 	rtm := p.client.NewRTM()
 	go rtm.ManageConnection()
 
-	ctx.Bus.Subscribe(bus.SlackPostEvent, bus.Context{Func: p.postMessage, Name: "SlackHandler"})
+	ctx.Bus.Subscribe(bus.SlackPostEvent, bus.Context{
+		Func:   p.postMessage,
+		Name:   "SlackHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 
 	for {
 		select {

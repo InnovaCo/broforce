@@ -49,7 +49,11 @@ func (p *jiraResolver) Run(ctx bus.Context) error {
 	p.user = ctx.Config.GetStringOr("jira-user", "")
 	p.password = ctx.Config.GetStringOr("jira-password", "")
 
-	ctx.Bus.Subscribe(bus.SlackMsgEvent, bus.Context{Func: p.handler, Name: "JiraResolverHandler"})
+	ctx.Bus.Subscribe(bus.SlackMsgEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "JiraResolverHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 
 	return nil
 }
@@ -124,7 +128,11 @@ type jiraCommenter struct {
 func (p *jiraCommenter) Run(ctx bus.Context) error {
 	p.channel = ctx.Config.GetStringOr("channel", "")
 	p.output = fasttemplate.New(ctx.Config.GetStringOr("output-template", ""), "{{", "}}")
-	ctx.Bus.Subscribe(bus.JiraHookEvent, bus.Context{Func: p.handler, Name: "JiraCommentHandler"})
+	ctx.Bus.Subscribe(bus.JiraHookEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "JiraCommentHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 
 	return nil
 }

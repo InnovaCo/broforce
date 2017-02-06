@@ -166,6 +166,10 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 }
 
 func (p *outdatedConsul) Run(ctx bus.Context) error {
-	ctx.Bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
+	ctx.Bus.Subscribe(bus.OutdatedEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "OutdatedHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 	return nil
 }

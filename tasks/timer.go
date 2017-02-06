@@ -30,7 +30,11 @@ func (p *timer) handler(e bus.Event, ctx bus.Context) error {
 
 func (p *timer) Run(ctx bus.Context) error {
 	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 1)) * time.Second
-	ctx.Bus.Subscribe(bus.TimerEvent, bus.Context{Func: p.handler, Name: "TimerHandler"})
+	ctx.Bus.Subscribe(bus.TimerEvent, bus.Context{
+		Func:   p.handler,
+		Name:   "TimerHandler",
+		Bus:    ctx.Bus,
+		Config: ctx.Config})
 
 	i := int64(0)
 	event := bus.NewEvent(bus.NewUUID(), bus.TimerEvent, bus.JsonCoding)
