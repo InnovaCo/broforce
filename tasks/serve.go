@@ -1,14 +1,15 @@
 package tasks
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/InnovaCo/broforce/bus"
-	"io"
 )
 
 func init() {
@@ -16,7 +17,6 @@ func init() {
 }
 
 type serve struct {
-	ctx *bus.Context
 }
 
 func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w io.Writer) error {
@@ -50,29 +50,19 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w i
 	return cmd.Run()
 }
 
-func (p *serve) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	eventBus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
-	eventBus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+func (p *serve) Run(ctx bus.Context) error {
+	ctx.Bus.Subscribe(bus.ServeCmdEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
+	ctx.Bus.Subscribe(bus.ServeCmdWithDataEvent, bus.Context{Func: p.handler, Name: "ServeHandler"})
 	return nil
 }
 
 func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 	params := serveParams{}
-	if err := bus.Encoder(e.Data, &params, e.Coding); err != nil {
+	if err := e.Unmarshal(&params); err != nil {
 		return err
 	}
+	buffer := bytes.NewBuffer(make([]byte, 0))
+	defer ctx.Log.Info(buffer.String())
 
-	if err := p.serveRun(params, e.Subject, &ctx, io.Writer(&cmdWrite{ctx: ctx})); err != nil {
-		return err
-	}
-	return nil
-}
-
-type cmdWrite struct {
-	ctx bus.Context
-}
-
-func (p cmdWrite) Write(d []byte) (int, error) {
-	p.ctx.Log.Info(string(d))
-	return len(d), nil
+	return p.serveRun(params, e.Subject, &ctx, io.Writer(buffer))
 }

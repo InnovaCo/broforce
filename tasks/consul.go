@@ -2,13 +2,13 @@ package tasks
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/hashicorp/consul/api"
 
-	"fmt"
 	"github.com/InnovaCo/broforce/bus"
 	"github.com/InnovaCo/broforce/config"
 )
@@ -44,7 +44,7 @@ func (p *consulSensor) prepareConfig(cfg config.ConfigData) []*api.Config {
 	return dc
 }
 
-func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
+func (p *consulSensor) Run(ctx bus.Context) error {
 	p.clientsPool = make(map[string]*api.Client)
 
 	for _, c := range p.prepareConfig(ctx.Config) {
@@ -79,14 +79,9 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 
 					outdated.Key = strings.Replace(key.Key, fmt.Sprintf("%s/", outdatedPrefix), "", 1)
 					outdated.Address = address
-
-					e := bus.Event{
-						Trace:   bus.NewUUID(),
-						Subject: bus.OutdatedEvent,
-						Coding:  bus.JsonCoding}
-
-					if err := bus.Coder(&e, outdated); err == nil {
-						if err := eventBus.Publish(e); err != nil {
+					event := bus.NewEvent(bus.NewUUID(), bus.OutdatedEvent, bus.JsonCoding)
+					if err := event.Marshal(outdated); err == nil {
+						if err := ctx.Bus.Publish(*event); err != nil {
 							ctx.Log.Error(err)
 						}
 					} else {
@@ -108,12 +103,11 @@ func (p *consulSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 }
 
 type outdatedConsul struct {
-	bus *bus.EventsBus
 }
 
 func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 	event := outdatedEvent{}
-	if err := bus.Encoder(e.Data, &event, e.Coding); err != nil {
+	if err := e.Unmarshal(&event); err != nil {
 		return err
 	}
 
@@ -143,7 +137,7 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 		return nil
 	}
 
-	serveEvent := bus.Event{Trace: e.Trace, Subject: bus.ServeCmdWithDataEvent, Coding: bus.JsonCoding}
+	serveEvent := bus.NewEvent(e.Trace, bus.ServeCmdWithDataEvent, bus.JsonCoding)
 
 	for _, key := range pairs {
 		ctx.Log.Debugf("%s purge: %v=%v", conf.Address, string(key.Key), string(key.Value))
@@ -160,19 +154,18 @@ func (p *outdatedConsul) handler(e bus.Event, ctx bus.Context) error {
 			Plugin:   plugin[len(plugin)-1],
 			Manifest: g.Bytes()}
 
-		if err := bus.Coder(&serveEvent, params); err != nil {
+		if err := serveEvent.Marshal(params); err != nil {
 			ctx.Log.Error(err)
 			continue
 		}
-		if err := p.bus.Publish(serveEvent); err != nil {
+		if err := ctx.Bus.Publish(*serveEvent); err != nil {
 			ctx.Log.Error(err)
 		}
 	}
 	return nil
 }
 
-func (p *outdatedConsul) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
-	p.bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
+func (p *outdatedConsul) Run(ctx bus.Context) error {
+	ctx.Bus.Subscribe(bus.OutdatedEvent, bus.Context{Func: p.handler, Name: "OutdatedHandler"})
 	return nil
 }

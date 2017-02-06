@@ -43,18 +43,12 @@ Events:
 	}
 }
 
-type Event struct {
-	Trace   string
-	Subject string
-	Coding  string
-	Data    []byte
-}
-
 type Context struct {
 	Func   Handler
 	Name   string
 	Log    *log.Entry
 	Config config.ConfigData
+	Bus    *EventsBus
 }
 
 type SafeParams struct {
@@ -67,7 +61,7 @@ func NewUUID() string {
 }
 
 type Task interface {
-	Run(eventBus *EventsBus, ctx Context) error
+	Run(ctx Context) error
 }
 
 type Handler func(e Event, ctx Context) error

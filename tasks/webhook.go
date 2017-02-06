@@ -23,8 +23,7 @@ const (
 type hookSensor struct {
 	gitParams  map[string]string
 	jiraParams map[string]string
-	bus        *bus.EventsBus
-	ctx        bus.Context
+	ctx        *bus.Context
 }
 
 func (p hookSensor) selector(body []byte) (string, error) {
@@ -66,16 +65,16 @@ func (p *hookSensor) git(w http.ResponseWriter, r *http.Request) {
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
 	} else {
-		if g, err := p.selector(body); err != nil {
+		if gitType, err := p.selector(body); err != nil {
 			p.ctx.Log.Error(err)
 		} else {
 			uuid := bus.NewUUID()
 
 			p.ctx.Log.Debugf("Push: %s", uuid)
 
-			if err := p.bus.Publish(bus.Event{
+			if err := p.ctx.Bus.Publish(bus.Event{
 				Trace:   uuid,
-				Subject: g,
+				Subject: gitType,
 				Coding:  bus.JsonCoding,
 				Data:    body}); err != nil {
 				p.ctx.Log.Error(err)
@@ -100,8 +99,12 @@ func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 	if body, err := ioutil.ReadAll(r.Body); err != nil {
 		p.ctx.Log.Error(err)
 	} else {
-		if err := p.bus.Publish(bus.Event{
-			Trace:   bus.NewUUID(),
+		uuid := bus.NewUUID()
+
+		p.ctx.Log.Debugf("Push: %s", uuid)
+
+		if err := p.ctx.Bus.Publish(bus.Event{
+			Trace:   uuid,
 			Subject: bus.JiraHookEvent,
 			Coding:  bus.JsonCoding,
 			Data:    body}); err != nil {
@@ -111,9 +114,8 @@ func (p *hookSensor) jira(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (p *hookSensor) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
-	p.ctx = ctx
+func (p *hookSensor) Run(ctx bus.Context) error {
+	p.ctx = &ctx
 
 	if p.ctx.Config.Exist("git") {
 		p.ctx.Log.Debugf("add git handler with params: %v", p.ctx.Config.GetMap("git"))

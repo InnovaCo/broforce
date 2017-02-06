@@ -25,7 +25,6 @@ func createLink(issue *jira.Issue) string {
 }
 
 type jiraResolver struct {
-	bus      *bus.EventsBus
 	host     string
 	user     string
 	password string
@@ -34,8 +33,7 @@ type jiraResolver struct {
 	unknown  []*fasttemplate.Template
 }
 
-func (p *jiraResolver) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
+func (p *jiraResolver) Run(ctx bus.Context) error {
 	var err error
 	if p.reg, err = regexp.Compile(ctx.Config.GetStringOr("input-template", "")); err != nil {
 		return err
@@ -51,14 +49,14 @@ func (p *jiraResolver) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
 	p.user = ctx.Config.GetStringOr("jira-user", "")
 	p.password = ctx.Config.GetStringOr("jira-password", "")
 
-	p.bus.Subscribe(bus.SlackMsgEvent, bus.Context{Func: p.handler, Name: "JiraResolverHandler"})
+	ctx.Bus.Subscribe(bus.SlackMsgEvent, bus.Context{Func: p.handler, Name: "JiraResolverHandler"})
 
 	return nil
 }
 
 func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 	msg := slackMessage{}
-	if err := bus.Encoder(e.Data, &msg, e.Coding); err != nil {
+	if err := e.Unmarshal(&msg); err != nil {
 		return err
 	}
 
@@ -70,13 +68,9 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	event := bus.Event{
-		Trace:   e.Trace,
-		Subject: bus.SlackPostEvent,
-		Coding:  bus.JsonCoding}
+	event := bus.NewEvent(e.Trace, bus.SlackPostEvent, bus.JsonCoding)
 
 	set := make(map[string]bool)
-
 	for _, s := range p.reg.FindAllString(msg.Text, -1) {
 		if _, found := set[s]; found {
 			continue
@@ -91,52 +85,46 @@ func (p *jiraResolver) handler(e bus.Event, ctx bus.Context) error {
 			ctx.Log.Error(err)
 
 			if len(p.unknown) > 0 {
-				if err := bus.Coder(&event, slackMessage{
+				if err := event.Marshal(slackMessage{
 					Type:    msg.Type,
 					Channel: msg.Channel,
 					Text: p.unknown[rand.Intn(len(p.unknown)-1)].ExecuteString(map[string]interface{}{
-						"key": s})}); err == nil {
-					if err := p.bus.Publish(event); err != nil {
-						ctx.Log.Error(err)
-					}
-				} else {
+						"key": s})}); err != nil {
+					return err
+				}
+				if err := ctx.Bus.Publish(*event); err != nil {
 					return err
 				}
 			}
 			continue
 		}
 
-		if err := bus.Coder(&event, slackMessage{
+		if err := event.Marshal(slackMessage{
 			Type:    msg.Type,
 			Channel: msg.Channel,
 			Text: p.output.ExecuteString(map[string]interface{}{
 				"key":     issue.Key,
 				"url":     createLink(issue),
 				"summary": issue.Fields.Summary,
-				"status":  issue.Fields.Status.Name})}); err == nil {
-			if err := p.bus.Publish(event); err != nil {
-				ctx.Log.Error()
-			}
-		} else {
+				"status":  issue.Fields.Status.Name})}); err != nil {
+			return err
+		}
+		if err := ctx.Bus.Publish(*event); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
 type jiraCommenter struct {
-	bus     *bus.EventsBus
 	output  *fasttemplate.Template
 	channel string
 }
 
-func (p *jiraCommenter) Run(eventBus *bus.EventsBus, ctx bus.Context) error {
-	p.bus = eventBus
-
+func (p *jiraCommenter) Run(ctx bus.Context) error {
 	p.channel = ctx.Config.GetStringOr("channel", "")
 	p.output = fasttemplate.New(ctx.Config.GetStringOr("output-template", ""), "{{", "}}")
-	p.bus.Subscribe(bus.JiraHookEvent, bus.Context{Func: p.handler, Name: "JiraCommentHandler"})
+	ctx.Bus.Subscribe(bus.JiraHookEvent, bus.Context{Func: p.handler, Name: "JiraCommentHandler"})
 
 	return nil
 }
@@ -150,10 +138,8 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 	if !g.ExistsP("comment") {
 		return nil
 	}
-
 	issue := jira.Issue{}
 	comment := jira.Comment{}
-
 	if err := json.Unmarshal(g.Path("issue").Bytes(), &issue); err != nil {
 		return nil
 	}
@@ -173,19 +159,15 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 			Text:       "Комментарий",
 			MarkdownIn: []string{"title", "fields", "text"},
 			Fields: []slack.AttachmentField{slack.AttachmentField{
-				Title: fmt.Sprintf("от %s", comment.Author.DisplayName),
+				Title: fmt.Sprintf("от %s:", comment.Author.DisplayName),
 				Value: comment.Body,
 				Short: false}}}}}
 
-	event := bus.Event{
-		Trace:   e.Trace,
-		Coding:  bus.JsonCoding,
-		Subject: bus.SlackPostEvent}
+	event := bus.NewEvent(e.Trace, bus.JsonCoding, bus.SlackPostEvent)
 
-	if err := bus.Coder(&event, msg); err != nil {
+	if err := event.Marshal(msg); err != nil {
 		return err
 	} else {
-		p.bus.Publish(event)
-		return nil
+		return ctx.Bus.Publish(*event)
 	}
 }

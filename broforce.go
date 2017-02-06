@@ -40,7 +40,7 @@ func main() {
 
 			logger.Log.Debugf("Config for %s: %v", n, c.Get(n))
 
-			go s.Run(b, bus.Context{Name: n, Config: c.Get(n), Log: logger.Logger4Handler(n, "")})
+			go s.Run(bus.Context{Name: n, Config: c.Get(n), Log: logger.Logger4Handler(n, ""), Bus: b})
 		}
 	}
 
