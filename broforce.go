@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -11,10 +12,9 @@ import (
 	"github.com/InnovaCo/broforce/config"
 	"github.com/InnovaCo/broforce/logger"
 	"github.com/InnovaCo/broforce/tasks"
-	"os"
 )
 
-var version = "0.4.0"
+var version = "0.5.0"
 
 func main() {
 	cfgPath := kingpin.Flag("config", "Path to config.yml file.").Default("config.yml").String()
@@ -38,10 +38,14 @@ func main() {
 	}
 	allowTasks := fmt.Sprintf(",%s,", *allow)
 	c := config.New(*cfgPath, config.YAMLAdapter)
+	if c == nil {
+		fmt.Println("Error: config not create")
+		return
+	}
 	logger.New(c.Get("logger"))
 	b := bus.New()
 	for n, s := range tasks.GetPool() {
-		if strings.Index(allowTasks, n) != -1 {
+		if strings.Index(allowTasks, fmt.Sprintf(",%s,", n)) != -1 {
 
 			logger.Log.Debugf("Config for %s: %v", n, c.Get(n))
 

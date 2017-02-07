@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	configAdapters[YAMLAdapter] = Config(&defaultConfig{})
+	registry(YAMLAdapter, Config(&defaultConfig{}))
 }
 
 type defaultConfig struct {
@@ -59,7 +59,7 @@ func (p *defaultConfigData) GetString(path string) string {
 }
 
 func (p *defaultConfigData) Search(hierarchy ...string) string {
-	return fmt.Sprintf("%v", p.data.Search(hierarchy ...).Data())
+	return fmt.Sprintf("%v", p.data.Search(hierarchy...).Data())
 }
 
 func (p *defaultConfigData) GetStringOr(path string, defaultVal string) string {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -8,14 +9,20 @@ var instance Config
 var once sync.Once
 var configAdapters = make(map[string]Config)
 
+func registry(name string, cfg Config) {
+	configAdapters[name] = cfg
+}
+
 func New(path string, adapter string) Config {
 	once.Do(func() {
-		if _, ok := configAdapters[adapter]; !ok {
-			adapter = YAMLAdapter
-		}
 		instance = configAdapters[adapter]
+		if instance == nil {
+			return
+		}
 		if err := instance.Init(path); err != nil {
-			panic(err)
+			fmt.Errorf("Error: %v", err)
+			instance = nil
+			return
 		}
 	})
 	return instance

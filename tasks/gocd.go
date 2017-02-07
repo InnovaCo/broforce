@@ -18,11 +18,6 @@ func init() {
 	registry("gocdSheduler", bus.Task(&gocdSheduler{}))
 }
 
-type gocdVars struct {
-	Branch string
-	Sha    string
-}
-
 type gocdSheduler struct {
 	login    string
 	password string
@@ -63,17 +58,17 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 				ctx.Log.Debugf("before == %s", g.Path("before").Data().(string))
 				return nil
 			}
-			v := gocdVars{}
-			if v.Sha, ok = g.Path("ref").Data().(string); !ok {
-				return fmt.Errorf("Key %s not found", "body.ref")
+			Sha, ok := g.Path("checkout_sha").Data().(string)
+			if !ok {
+				return fmt.Errorf("Key %s not found", "ref")
 			}
 			s := strings.Split(ref, "/")
-			v.Branch = s[len(s)-1]
-			d, _ := json.Marshal(v)
+			Branch := s[len(s)-1]
+			vars := fmt.Sprintf("variables[BRANCH]=%s&variables[SHA]=%s", Branch, Sha)
 
 			client := gocd.New(p.host, p.login, p.password)
 			for i := 0; i < p.times; i++ {
-				if err := client.SchedulePipeline(ctx.Config.Search("pipelines", gitName, "pipeline"), d); err != nil {
+				if err := client.SchedulePipeline(ctx.Config.Search("pipelines", gitName, "pipeline"), []byte(vars)); err != nil {
 					ctx.Log.Error(err)
 					time.Sleep(p.interval * time.Second)
 				} else {
@@ -104,9 +99,9 @@ func (p *gocdSheduler) Run(ctx bus.Context) error {
 		return err
 	}
 	ctx.Bus.Subscribe(bus.GitlabHookEvent, bus.Context{
-		Func: p.handler,
-		Name: "GoCDShedulerHandler",
-		Bus: ctx.Bus,
+		Func:   p.handler,
+		Name:   "GoCDShedulerHandler",
+		Bus:    ctx.Bus,
 		Config: ctx.Config})
 	return nil
 }
