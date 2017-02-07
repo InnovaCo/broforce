@@ -1,5 +1,5 @@
 hash: a9eaf581830b1ba11a6177407d9a2ee18eb554fd7ebb9351b6697dcc96648af5
-updated: 2017-02-03T14:23:07.905683617+03:00
+updated: 2017-02-07T17:00:49.145228415+03:00
 imports:
 - name: github.com/alecthomas/template
   version: a0175ee3bccc567396460bf5acd36800cb10c49c
@@ -38,7 +38,7 @@ imports:
 - name: github.com/Jeffail/gabs
   version: 235106e63529b2743d680b351fa2677fd496ce1e
 - name: github.com/mhanygin/go-gocd
-  version: c1f4fbe3e84bf69e1368ca3a2aa003513e7ae276
+  version: 5076a95392c2f5146a45540eced5a57dadb316c5
 - name: github.com/nats-io/go-nats
   version: e6bb81b5a5f37ef7bf364bb6276e13813086c6ee
 - name: github.com/nlopes/slack
@@ -48,7 +48,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: b061729afc07e77a8aa4fad0a2fd840958f1942a
 - name: github.com/Sirupsen/logrus
-  version: 61e43dc76f7ee59a82bdf3d71033dc12bea4c77d
+  version: c078b1e43f58d563c74cebe63c85789e76ddb627
 - name: github.com/stretchr/testify
   version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
@@ -64,9 +64,9 @@ imports:
 - name: github.com/valyala/fasttemplate
   version: 3b874956e03f1636d171bda64b130f9135f42cff
 - name: github.com/xanzy/go-gitlab
-  version: 969aa6e79f5536dda9d6bae08a580afdfd3ea514
+  version: 726289beb12ec90d327f778901ef6259339f6312
 - name: golang.org/x/net
-  version: 007e530097ad7f954752df63046b4036f98ba6a6
+  version: 236b8f043b920452504e263bc21d354427127473
   subpackages:
   - websocket
 - name: golang.org/x/sys
