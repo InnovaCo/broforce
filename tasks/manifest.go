@@ -66,7 +66,6 @@ func (p *manifest) handlerGitlab(e bus.Event, ctx bus.Context) error {
 	if !ok {
 		return fmt.Errorf("Key %s not found", "repository.url")
 	}
-
 	if ref, ok := g.Search("ref").Data().(string); !ok {
 		return fmt.Errorf("Key %s not found", "ref")
 	} else {
@@ -143,7 +142,6 @@ func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 		return fmt.Errorf("Key %s not found", "repository.contents_url")
 	}
 	repo = strings.Replace(repo, "{+path}", "", 1)
-
 	params.Vars["ssh-repo"], ok = g.Search("repository", "url").Data().(string)
 	if !ok {
 		return fmt.Errorf("Key %s not found", "repository.url")
@@ -181,7 +179,6 @@ func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 			}
 		}
 	}
-
 	if params.Manifest, err = p.uploadGithubManifest(host, token, repo, params.Ref, manifestName); err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ func init() {
 type serve struct {
 }
 
-func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w io.Writer) error {
+func (p *serve) serveRun(params serveParams, pType string, w io.Writer) error {
 	args := []string{params.Plugin}
 	for k, v := range params.Vars {
 		args = append(args, "--var", fmt.Sprintf("%s=%s", k, v))
@@ -31,7 +31,7 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w i
 			return err
 		}
 		defer os.Remove(tmpfile.Name())
-		ctx.Log.Debug("manifest\n", string(params.Manifest))
+		w.Write(params.Manifest)
 
 		if _, err := tmpfile.Write(params.Manifest); err != nil {
 			return err
@@ -43,7 +43,7 @@ func (p *serve) serveRun(params serveParams, pType string, ctx *bus.Context, w i
 
 	cmd := exec.Command("serve", args...)
 
-	ctx.Log.Info(cmd.Args)
+	w.Write([]byte(strings.Join(cmd.Args, " ")))
 
 	cmd.Stdout = w
 	cmd.Stderr = w
@@ -70,7 +70,7 @@ func (p *serve) handler(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 	buffer := bytes.NewBuffer(make([]byte, 0))
-	err := p.serveRun(params, e.Subject, &ctx, io.Writer(buffer))
+	err := p.serveRun(params, e.Subject, io.Writer(buffer))
 	ctx.Log.Info(buffer.String())
 	return err
 }

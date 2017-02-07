@@ -11,6 +11,7 @@ import (
 	"github.com/InnovaCo/broforce/config"
 	"github.com/InnovaCo/broforce/logger"
 	"github.com/InnovaCo/broforce/tasks"
+	"os"
 )
 
 var version = "0.4.0"
@@ -31,6 +32,10 @@ func main() {
 		return
 	}
 
+	if _, err := os.Stat(*cfgPath); os.IsNotExist(err) {
+		fmt.Errorf("%v", err)
+		return
+	}
 	allowTasks := fmt.Sprintf(",%s,", *allow)
 	c := config.New(*cfgPath, config.YAMLAdapter)
 	logger.New(c.Get("logger"))

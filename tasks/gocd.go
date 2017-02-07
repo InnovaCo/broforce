@@ -19,8 +19,8 @@ func init() {
 }
 
 type gocdVars struct {
-	Branch string `json:"variables[BRANCH]"`
-	Sha    string `json:"variables[SHA]"`
+	Branch string
+	Sha    string
 }
 
 type gocdSheduler struct {
