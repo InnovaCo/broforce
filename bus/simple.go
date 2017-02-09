@@ -14,9 +14,7 @@ func init() {
 
 func SafeHandler(h Handler, sp SafeParams) Handler {
 	return func(e Event, ctx Context) error {
-
 		updateContext(e, &ctx)
-
 		defer timeTrack(time.Now(), ctx)
 		for {
 			if err := h(e, ctx); err != nil {
@@ -32,7 +30,6 @@ func SafeHandler(h Handler, sp SafeParams) Handler {
 				break
 			}
 		}
-
 		return nil
 	}
 }

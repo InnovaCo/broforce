@@ -29,14 +29,11 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) er
 	ctx.Log.Debugf("User: %s, channel: %s, message: '%s'", msg.User, msg.Channel, msg.Text)
 
 	uuid := bus.NewUUID()
-	event := bus.NewEvent(uuid, bus.SlackMsgEvent, bus.JsonCoding)
-
-	ctx.Log.Debugf("Push: %s", uuid)
-
-	if err := event.Marshal(msg.Msg); err == nil {
-		return ctx.Bus.Publish(*event)
-	} else {
+	if event, err := bus.NewEventWithData(uuid, bus.SlackMsgEvent, bus.JsonCoding, msg.Msg); err != nil {
 		return err
+	} else {
+		ctx.Log.Debugf("Push: %s", uuid)
+		return ctx.Bus.Publish(*event)
 	}
 }
 

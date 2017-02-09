@@ -16,7 +16,14 @@ func NewEvent(trace string, subject string, coding string) *Event {
 		Subject: subject,
 		Coding:  coding,
 		Data:    make([]byte, 0)}
+}
 
+func NewEventWithData(trace string, subject string, coding string, data interface{}) (*Event, error) {
+	event := Event{Trace: trace,
+		Subject: subject,
+		Coding:  coding,
+		Data:    make([]byte, 0)}
+	return &event, event.Marshal(data)
 }
 
 func (p *Event) Marshal(d interface{}) error {

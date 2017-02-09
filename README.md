@@ -1,3 +1,14 @@
+# broforce
+
+Возможности:
+ - прием webhook от систем: JIRA, Github, Gitlab;
+ - обработка ключей consul (список серверов);
+ - управление pipeline GoCD через конфигурирование;
+ - обработка manifest.yml и запуск задач serve;
+ - обработка комментариев JIRA и формирование сообщений slack;
+ - запрос описаний issue JIRA и форммирование сообщений slack
+ - прием сообщений slack и их парсинг;
+
 # Структура конфигурационного файла
 
 Конфигурационный файл в формате `yaml`. Каждой задаче при запуске передается 
@@ -41,3 +52,24 @@ logger:
       - fatal
       - panic
 ```
+
+# Ключи запуска
+
+Список доступных ключей запуска доступен через параметр `--help`.
+
+```
+usage: broforce [<flags>]
+
+Flags:
+  --help                 Show context-sensitive help (also try --help-long and --help-man).
+  --config="config.yml"  Path to config.yml file.
+  --show                 Show all task names.
+  --allow="manifest,serve,slackSensor,hookSensor,consulSensor,outdated,gocdSheduler,jiraResolver,jiraCommenter"  
+                         list of allowed tasks
+  --version              Show application version.
+```
+
+Процесс может быть запущен с ключом `--allow`, в котором через `,` перечисляются задачи, 
+которое разрешено запускать (по умолчанию, запускаются все доступные задачи). 
+
+Список доступных задач выводится при использовании ключа `--show`.
