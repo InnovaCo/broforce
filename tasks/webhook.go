@@ -10,6 +10,8 @@ import (
 	"github.com/Jeffail/gabs"
 
 	"github.com/InnovaCo/broforce/bus"
+	"os"
+	"strconv"
 )
 
 func init() {
@@ -17,7 +19,8 @@ func init() {
 }
 
 const (
-	maxRetry = 10
+	maxRetry    = 10
+	WebhookPort = "BROFORSE_WEBHOOK_PORT"
 )
 
 type hookSensor struct {
@@ -141,7 +144,15 @@ func (p *hookSensor) Run(ctx bus.Context) error {
 	i := 0
 	delay := time.Duration(p.ctx.Config.GetIntOr("delay", 10))
 	for {
-		if err = http.ListenAndServe(fmt.Sprintf(":%d", p.ctx.Config.GetIntOr("port", 8080)), nil); err != nil {
+		port, err := strconv.Atoi(os.Getenv(WebhookPort))
+		if err != nil {
+			p.ctx.Log.Error(err)
+			port = p.ctx.Config.GetIntOr("port", 8080)
+		}
+
+		p.ctx.Log.Debugf("PORT: %d", port)
+
+		if err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 			p.ctx.Log.Debug(err)
 			time.Sleep(delay * time.Second)
 			i++
