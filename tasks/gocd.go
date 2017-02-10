@@ -18,6 +18,11 @@ func init() {
 	registry("gocdSheduler", bus.Task(&gocdSheduler{}))
 }
 
+const (
+	defaultInterval = 10
+	defaultTimes    = 100
+)
+
 type gocdSheduler struct {
 	login    string
 	password string
@@ -82,8 +87,8 @@ func (p *gocdSheduler) handler(e bus.Event, ctx bus.Context) error {
 
 func (p *gocdSheduler) Run(ctx bus.Context) error {
 	p.host = ctx.Config.GetString("host")
-	p.times = ctx.Config.GetIntOr("times", 100)
-	p.interval = time.Duration(ctx.Config.GetIntOr("interval", 10))
+	p.times = ctx.Config.GetIntOr("times", defaultTimes)
+	p.interval = time.Duration(ctx.Config.GetIntOr("interval", defaultInterval))
 
 	if data, err := ioutil.ReadFile(ctx.Config.GetString("access")); err == nil {
 		cread := struct {
