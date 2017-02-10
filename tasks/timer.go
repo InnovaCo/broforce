@@ -42,7 +42,6 @@ func (p *timer) Run(ctx bus.Context) error {
 	tact := Tact{}
 	for {
 		tact.Number, i = i, i+1
-
 		if err := event.Marshal(tact); err != nil {
 			ctx.Log.Error(err)
 		}

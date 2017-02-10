@@ -144,15 +144,15 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 	}
 
 	if !g.ExistsP("comment") {
-		return nil
+		return fmt.Errorf("no comment tag")
 	}
 	issue := jira.Issue{}
-	comment := jira.Comment{}
 	if err := json.Unmarshal(g.Path("issue").Bytes(), &issue); err != nil {
-		return nil
+		return err
 	}
+	comment := jira.Comment{}
 	if err := json.Unmarshal(g.Path("comment").Bytes(), &comment); err != nil {
-		return nil
+		return err
 	}
 
 	msg := slackMessage{
@@ -162,18 +162,18 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 			"summary": issue.Fields.Summary,
 			"status":  issue.Fields.Status.Name}),
 		Channel: p.channel,
-		Attachments: []slack.Attachment{slack.Attachment{
-			Color:      "#008000",
-			Text:       "Комментарий",
-			MarkdownIn: []string{"title", "fields", "text"},
-			Fields: []slack.AttachmentField{slack.AttachmentField{
-				Title: fmt.Sprintf("от %s:", comment.Author.DisplayName),
-				Value: comment.Body,
-				Short: false}}}}}
+		Attachments: []slack.Attachment{
+			slack.Attachment{
+				Color:      "#008000",
+				Text:       "Комментарий",
+				MarkdownIn: []string{"title", "fields", "text"},
+				Fields: []slack.AttachmentField{
+					slack.AttachmentField{
+						Title: fmt.Sprintf("от %s:", comment.Author.DisplayName),
+						Value: comment.Body,
+						Short: false}}}}}
 
-	event := bus.NewEvent(e.Trace, bus.JsonCoding, bus.SlackPostEvent)
-
-	if err := event.Marshal(msg); err != nil {
+	if event, err := bus.NewEventWithData(e.Trace, bus.SlackPostEvent, bus.JsonCoding, msg); err != nil {
 		return err
 	} else {
 		return ctx.Bus.Publish(*event)

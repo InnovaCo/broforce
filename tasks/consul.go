@@ -79,12 +79,9 @@ func (p *consulSensor) Run(ctx bus.Context) error {
 
 					outdated.Key = strings.Replace(key.Key, fmt.Sprintf("%s/", outdatedPrefix), "", 1)
 					outdated.Address = address
-					event := bus.NewEvent(bus.NewUUID(), bus.OutdatedEvent, bus.JsonCoding)
-					if err := event.Marshal(outdated); err == nil {
-						if err := ctx.Bus.Publish(*event); err != nil {
-							ctx.Log.Error(err)
-						}
-					} else {
+					if event, err := bus.NewEventWithData(bus.NewUUID(), bus.OutdatedEvent, bus.JsonCoding, outdated); err != nil {
+						ctx.Log.Error(err)
+					} else if err := ctx.Bus.Publish(*event); err != nil {
 						ctx.Log.Error(err)
 					}
 				} else {
