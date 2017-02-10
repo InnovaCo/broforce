@@ -173,7 +173,7 @@ func (p *jiraCommenter) handler(e bus.Event, ctx bus.Context) error {
 						Value: comment.Body,
 						Short: false}}}}}
 
-	if event, err := bus.NewEventWithData(e.Trace, bus.JsonCoding, bus.SlackPostEvent, msg); err != nil {
+	if event, err := bus.NewEventWithData(e.Trace, bus.SlackPostEvent, bus.JsonCoding, msg); err != nil {
 		return err
 	} else {
 		return ctx.Bus.Publish(*event)
