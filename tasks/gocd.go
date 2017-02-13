@@ -18,6 +18,20 @@ func init() {
 	registry("gocdSheduler", bus.Task(&gocdSheduler{}))
 }
 
+//config section
+//
+//gocdSheduler:
+//  host: https://gocd.ru
+//  access: path/to/login/and/password
+//  times: 360
+//  interval: 10
+//
+//  pipelines:
+//    git@github.com/repo_name.git:
+//      pipeline: "pipeline name"
+//      ref: "^refs/heads/(branch|master)"
+//
+
 const (
 	defaultInterval = 10
 	defaultTimes    = 100

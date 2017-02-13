@@ -15,14 +15,25 @@ import (
 	"github.com/InnovaCo/broforce/bus"
 )
 
+func init() {
+	registry("manifest", bus.Task(&manifest{}))
+}
+
+//config section
+//
+//manifest:
+//  gitlab:
+//    host: "https://gitlab.ru/api/v3/"
+//    token: "TOKEN"
+//  github:
+//    host: "https://api.github.com"
+//    token: "TOKEN"
+//
+
 const (
 	defaultSHA   = "0000000000000000000000000000000000000000"
 	manifestName = "manifest.yml"
 )
-
-func init() {
-	registry("manifest", bus.Task(&manifest{}))
-}
 
 type manifest struct {
 }

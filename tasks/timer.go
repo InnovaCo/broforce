@@ -10,6 +10,12 @@ func init() {
 	//registry("timer", bus.Task(&timer{}))
 }
 
+//config section
+//
+//timeSensor:
+//  interval: 10
+//
+
 type Tact struct {
 	Number int64 `json:"number"`
 }
@@ -35,18 +41,16 @@ func (p *timer) Run(ctx bus.Context) error {
 		Name:   "TimerHandler",
 		Bus:    ctx.Bus,
 		Config: ctx.Config})
-
 	i := int64(0)
-	event := bus.NewEvent(bus.NewUUID(), bus.TimerEvent, bus.JsonCoding)
-
 	tact := Tact{}
 	for {
 		tact.Number, i = i, i+1
-		if err := event.Marshal(tact); err != nil {
+		if event, err := bus.NewEventWithData(bus.NewUUID(), bus.TimerEvent, bus.JsonCoding, tact); err != nil {
 			ctx.Log.Error(err)
-		}
-		if err := ctx.Bus.Publish(*event); err != nil {
-			ctx.Log.Error(err)
+		} else {
+			if err := ctx.Bus.Publish(*event); err != nil {
+				ctx.Log.Error(err)
+			}
 		}
 		time.Sleep(p.interval)
 	}
