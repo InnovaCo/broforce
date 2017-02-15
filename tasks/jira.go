@@ -20,6 +20,23 @@ func init() {
 	registry("jiraCommenter", bus.Task(&jiraCommenter{}))
 }
 
+//config section
+//
+//jiraResolver:
+//  jira-host: "https://jira.com"
+//  jira-user: "jira_user"
+//  jira-password: "jira_password"
+//  input-template: regexp
+//  output-template: fasttemplate string
+//  unknown-template:
+//    - fasttemplate_string_1
+//    - fasttemplate_string_2
+//
+//jiraCommenter:
+//  channel: slack_channel_name
+//  output-template: fasttemplate_string
+//
+
 func createLink(issue *jira.Issue) string {
 	return strings.Replace(strings.Replace(issue.Self, "/rest/api/2/issue", "/browse", -1), issue.ID, issue.Key, -1)
 }

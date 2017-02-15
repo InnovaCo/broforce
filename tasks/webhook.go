@@ -19,8 +19,10 @@ func init() {
 }
 
 const (
-	maxRetry    = 10
-	WebhookPort = "BROFORSE_WEBHOOK_PORT"
+	maxRetry     = 10
+	webhookPort  = "BROFORSE_WEBHOOK_PORT"
+	defaultDelay = 10
+	defaultPort  = 8080
 )
 
 type hookSensor struct {
@@ -122,8 +124,8 @@ func (p *hookSensor) Run(ctx bus.Context) error {
 
 	if p.ctx.Config.Exist("git") {
 		p.ctx.Log.Debugf("add git handler with params: %v", p.ctx.Config.GetMap("git"))
-		p.gitParams = make(map[string]string)
 
+		p.gitParams = make(map[string]string)
 		p.gitParams["AuthKeyName"] = p.ctx.Config.GetStringOr("git.auth-key-name", "")
 		p.gitParams["AuthKeyValue"] = p.ctx.Config.GetStringOr("git.auth-key-value", "")
 		http.HandleFunc(p.ctx.Config.GetStringOr("git.url", "/git"), p.git)
@@ -131,29 +133,29 @@ func (p *hookSensor) Run(ctx bus.Context) error {
 
 	if p.ctx.Config.Exist("jira") {
 		p.ctx.Log.Debugf("add jira handler with params: %v", p.ctx.Config.GetMap("jira"))
-		p.jiraParams = make(map[string]string)
 
+		p.jiraParams = make(map[string]string)
 		p.jiraParams["AuthKeyName"] = p.ctx.Config.GetStringOr("jira.auth-key-name", "")
 		p.jiraParams["AuthKeyValue"] = p.ctx.Config.GetStringOr("jira.auth-key-value", "")
-
 		http.HandleFunc(p.ctx.Config.GetStringOr("jira.url", "/jira"), p.jira)
 	}
 
 	p.ctx.Log.Debug("Run")
-	var err error
+
+	delay := time.Duration(p.ctx.Config.GetIntOr("delay", defaultDelay))
+	port, err := strconv.Atoi(os.Getenv(webhookPort))
+	if err != nil {
+		p.ctx.Log.Error(err)
+		port = p.ctx.Config.GetIntOr("port", defaultPort)
+	}
+
+	p.ctx.Log.Debugf("PORT: %d", port)
+
 	i := 0
-	delay := time.Duration(p.ctx.Config.GetIntOr("delay", 10))
 	for {
-		port, err := strconv.Atoi(os.Getenv(WebhookPort))
-		if err != nil {
-			p.ctx.Log.Error(err)
-			port = p.ctx.Config.GetIntOr("port", 8080)
-		}
-
-		p.ctx.Log.Debugf("PORT: %d", port)
-
-		if err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 			p.ctx.Log.Debug(err)
+
 			time.Sleep(delay * time.Second)
 			i++
 			if i >= maxRetry {
@@ -165,6 +167,8 @@ func (p *hookSensor) Run(ctx bus.Context) error {
 			break
 		}
 	}
+
 	p.ctx.Log.Debug("Complete")
-	return err
+
+	return nil
 }

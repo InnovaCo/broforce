@@ -15,14 +15,32 @@ import (
 	"github.com/InnovaCo/broforce/bus"
 )
 
+func init() {
+	registry("manifest", bus.Task(&manifest{}))
+}
+
+//config section
+//
+//manifest:
+//	plugins:
+//    change:
+//		- gocd.pipeline.create
+//      - dashboard.create.kibana
+//	  delete:
+//		- gocd.pipeline.create
+//      - outdated
+//  gitlab:
+//    host: "https://gitlab.ru/api/v3/"
+//    token: "TOKEN"
+//  github:
+//    host: "https://api.github.com"
+//    token: "TOKEN"
+//
+
 const (
 	defaultSHA   = "0000000000000000000000000000000000000000"
 	manifestName = "manifest.yml"
 )
-
-func init() {
-	registry("manifest", bus.Task(&manifest{}))
-}
 
 type manifest struct {
 }
@@ -105,9 +123,10 @@ func (p *manifest) handlerGitlab(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params, &ctx)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher(e.Trace, []string{"outdated"}, params, &ctx)
+		p.pusher(e.Trace, ctx.Config.GetArrayString("plugins.delete"), params, &ctx)
+	} else {
+		p.pusher(e.Trace, ctx.Config.GetArrayString("plugins.change"), params, &ctx)
 	}
 	return nil
 }
@@ -183,9 +202,10 @@ func (p *manifest) handlerGithub(e bus.Event, ctx bus.Context) error {
 		return err
 	}
 
-	p.pusher(e.Trace, []string{"gocd.pipeline.create", "db.create"}, params, &ctx)
 	if strings.Compare(params.Vars["purge"], "true") == 0 {
-		p.pusher(e.Trace, []string{"outdated"}, params, &ctx)
+		p.pusher(e.Trace, ctx.Config.GetArrayString("plugins.delete"), params, &ctx)
+	} else {
+		p.pusher(e.Trace, ctx.Config.GetArrayString("plugins.change"), params, &ctx)
 	}
 	return nil
 }

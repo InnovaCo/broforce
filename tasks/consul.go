@@ -13,6 +13,21 @@ import (
 	"github.com/InnovaCo/broforce/config"
 )
 
+func init() {
+	registry("consulSensor", bus.Task(&consulSensor{}))
+	registry("outdated", bus.Task(&outdatedConsul{}))
+}
+
+//config section
+//
+//consulSensor:
+//  consul:
+//    - server1
+//    - server2
+//  key-outdate: "path/to/key/outdated"
+//  key-data: "path/to/key/data"
+//
+
 const (
 	dataPrefix     = "services/data"
 	outdatedPrefix = "services/outdated"
@@ -23,11 +38,6 @@ type outdatedEvent struct {
 	EndOfLife int64  `json:"endOfLife"`
 	Key       string `json:"key"`
 	Address   string `json:"address"`
-}
-
-func init() {
-	registry("consulSensor", bus.Task(&consulSensor{}))
-	registry("outdated", bus.Task(&outdatedConsul{}))
 }
 
 type consulSensor struct {

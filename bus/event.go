@@ -2,6 +2,7 @@ package bus
 
 import (
 	"encoding/json"
+	"strings"
 )
 
 type Event struct {
@@ -45,4 +46,8 @@ func (p *Event) Unmarshal(v interface{}) error {
 		}
 	}
 	return nil
+}
+
+func (p *Event) SubjectIs(subject string) bool {
+	return strings.Compare(p.Subject, subject) == 0
 }

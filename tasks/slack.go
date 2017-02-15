@@ -13,6 +13,13 @@ func init() {
 	registry("slackSensor", bus.Task(&sensorSlack{}))
 }
 
+//config section
+//
+//slackSensor:
+//  username: "UUID user"
+//  token: TOKEN
+//
+
 type slackMessage slack.Msg
 
 type sensorSlack struct {
@@ -26,7 +33,7 @@ func (p *sensorSlack) messageEvent(msg *slack.MessageEvent, ctx *bus.Context) er
 		return nil
 	}
 
-	ctx.Log.Debugf("User: %s, channel: %s, message: '%s'", msg.User, msg.Channel, msg.Text)
+	//ctx.Log.Debugf("User: %s, channel: %s, message: '%s'", msg.User, msg.Channel, msg.Text)
 
 	uuid := bus.NewUUID()
 	if event, err := bus.NewEventWithData(uuid, bus.SlackMsgEvent, bus.JsonCoding, msg.Msg); err != nil {
@@ -48,11 +55,9 @@ func (p *sensorSlack) postMessage(e bus.Event, ctx bus.Context) error {
 	params := slack.PostMessageParameters{
 		AsUser:   true,
 		Username: p.user.ID}
-
 	if len(msg.Attachments) != 0 {
 		params.Attachments = msg.Attachments
 	}
-
 	_, _, err := p.client.PostMessage(msg.Channel, msg.Text, params)
 	return err
 }
@@ -85,13 +90,10 @@ func (p *sensorSlack) Run(ctx bus.Context) error {
 				if err := p.messageEvent(ev, &ctx); err != nil {
 					ctx.Log.Error(err)
 				}
-
 			case *slack.RTMError:
 				ctx.Log.Error(ev.Error())
-
 			case *slack.InvalidAuthEvent:
 				return fmt.Errorf("Invalid credentials")
-
 			}
 		}
 	}
