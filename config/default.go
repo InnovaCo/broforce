@@ -47,7 +47,7 @@ type defaultConfigData struct {
 }
 
 func (p *defaultConfigData) String() string {
-	return p.data.String()
+	return p.data.Data().(string)
 }
 
 func (p *defaultConfigData) Exist(path string) bool {
@@ -102,7 +102,16 @@ func (p *defaultConfigData) GetBool(path string) bool {
 
 func (p *defaultConfigData) GetArray(path string) []ConfigData {
 	out := make([]ConfigData, 0)
-	arr, err := p.data.Path(path).Children()
+
+	var data *gabs.Container
+
+	if len(strings.TrimSpace(path)) == 0 {
+		data = p.data
+	} else {
+		data = p.data.Path(path)
+	}
+
+	arr, err := data.Children()
 	if err != nil {
 		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
 		return out
@@ -115,7 +124,16 @@ func (p *defaultConfigData) GetArray(path string) []ConfigData {
 
 func (p *defaultConfigData) GetArrayString(path string) []string {
 	out := make([]string, 0)
-	arr, err := p.data.Path(path).Children()
+
+	var data *gabs.Container
+
+	if len(strings.TrimSpace(path)) == 0 {
+		data = p.data
+	} else {
+		data = p.data.Path(path)
+	}
+
+	arr, err := data.Children()
 	if err != nil {
 		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
 		return out
@@ -128,7 +146,16 @@ func (p *defaultConfigData) GetArrayString(path string) []string {
 
 func (p *defaultConfigData) GetMap(path string) map[string]ConfigData {
 	out := make(map[string]ConfigData)
-	mmap, err := p.data.Path(path).ChildrenMap()
+
+	var data *gabs.Container
+
+	if len(strings.TrimSpace(path)) == 0 {
+		data = p.data
+	} else {
+		data = p.data.Path(path)
+	}
+
+	mmap, err := data.ChildrenMap()
 	if err != nil {
 		fmt.Errorf("Error get map '%v' from: %v. Error: %s", path, p.data.Path(path).Data(), err)
 		return out

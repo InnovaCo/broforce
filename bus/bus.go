@@ -66,10 +66,10 @@ type Task interface {
 
 type Handler func(e Event, ctx Context) error
 
-func SafeRun(r func(eventBus *EventsBus, cfg config.ConfigData) error, sp SafeParams) func(eventBus *EventsBus, cfg config.ConfigData) error {
-	return func(eventBus *EventsBus, cfg config.ConfigData) error {
+func SafeRun(r func(ctx Context) error, sp SafeParams) func(ctx Context) error {
+	return func(ctx Context) error {
 		for {
-			if err := r(eventBus, cfg); err != nil {
+			if err := r(ctx); err != nil {
 				logger.Log.Error(err)
 				if sp.Retry <= 0 {
 					return err
@@ -94,8 +94,15 @@ type adapter interface {
 type EventsBus struct {
 }
 
-func New() *EventsBus {
+func New(cfg config.ConfigData) *EventsBus {
 	once.Do(func() {
+
+		//for a, t := range cfg.GetMap("") {
+		//
+		//}
+
+
+
 		instance = &EventsBus{}
 	})
 	return instance

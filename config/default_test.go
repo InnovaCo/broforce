@@ -99,3 +99,102 @@ slackSensor:
 
 	assert.Equal(t, configData.Exist("param3"), false)
 }
+
+func TestDefaultConfigData_GetMap(t *testing.T) {
+	data := `timeSensor:
+  interval: 10
+
+task1:
+  param1:
+    - value1
+    - value2
+
+slackSensor:
+  param1: value1
+  param2: value2
+`
+	tmpfile, err := ioutil.TempFile("/tmp", "manifest_")
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	defer os.Remove(tmpfile.Name())
+	if _, err := tmpfile.Write([]byte(data)); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	tmpfile.Close()
+	config := defaultConfig{}
+	config.Init(tmpfile.Name())
+	configData := config.Get("slackSensor").GetMap("   ")
+
+	v, ok := configData["param1"]
+
+	assert.Equal(t, len(configData), 2)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, v.String(), "value1")
+}
+
+func TestDefaultConfigData_GetArrayString(t *testing.T) {
+	data := `timeSensor:
+  interval: 10
+
+task1:
+  param1:
+    - value1
+    - value2
+
+slackSensor:
+  param1: value1
+  param2: value2
+`
+	tmpfile, err := ioutil.TempFile("/tmp", "manifest_")
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	defer os.Remove(tmpfile.Name())
+	if _, err := tmpfile.Write([]byte(data)); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	tmpfile.Close()
+	config := defaultConfig{}
+	config.Init(tmpfile.Name())
+	configData := config.Get("task1").GetArrayString("param1")
+
+	assert.Equal(t, len(configData), 2)
+	assert.Equal(t, configData, []string{"value1", "value2"})
+}
+
+func TestDefaultConfigData_GetArray(t *testing.T) {
+	data := `timeSensor:
+  interval: 10
+
+task1:
+  param1:
+    - value1
+    - value2
+
+slackSensor:
+  param1: value1
+  param2: value2
+`
+	tmpfile, err := ioutil.TempFile("/tmp", "manifest_")
+	if err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	defer os.Remove(tmpfile.Name())
+	if _, err := tmpfile.Write([]byte(data)); err != nil {
+		t.Error(err)
+		t.Fail()
+	}
+	tmpfile.Close()
+	config := defaultConfig{}
+	config.Init(tmpfile.Name())
+	configData := config.Get("task1").GetArray("param1")
+
+	assert.Equal(t, len(configData), 2)
+	assert.Equal(t, configData[0].String(), "value1")
+}
