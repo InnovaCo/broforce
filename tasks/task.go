@@ -22,7 +22,7 @@ func GetPool() map[string]bus.Task {
 }
 
 func GetPoolString() string {
-	keys := make([]string, 0, len(tasksPool))
+	keys := make([]string, 0)
 	for k := range tasksPool {
 		keys = append(keys, k)
 	}

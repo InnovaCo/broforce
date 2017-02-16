@@ -43,7 +43,7 @@ func TestSimple(t *testing.T) {
 	t.Run("PubSub", func(t *testing.T) {
 		got := false
 		a := &simpleAdapter{}
-		a.Run()
+		a.Run(cfg.Get("simple"))
 
 		handler := func(e Event, ctx Context) error {
 			got = true

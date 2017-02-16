@@ -19,10 +19,10 @@ func init() {
 }
 
 const (
-	maxRetry     = 10
-	webhookPort  = "BROFORSE_WEBHOOK_PORT"
-	defaultDelay = 10
-	defaultPort  = 8080
+	maxRetry       = 10
+	envWebhookPort = "BROFORSE_WEBHOOK_PORT"
+	defaultDelay   = 10
+	defaultPort    = 8080
 )
 
 type hookSensor struct {
@@ -143,7 +143,7 @@ func (p *hookSensor) Run(ctx bus.Context) error {
 	p.ctx.Log.Debug("Run")
 
 	delay := time.Duration(p.ctx.Config.GetIntOr("delay", defaultDelay))
-	port, err := strconv.Atoi(os.Getenv(webhookPort))
+	port, err := strconv.Atoi(os.Getenv(envWebhookPort))
 	if err != nil {
 		p.ctx.Log.Error(err)
 		port = p.ctx.Config.GetIntOr("port", defaultPort)

@@ -25,6 +25,10 @@ func main() {
 	kingpin.Parse()
 
 	if *show {
+		fmt.Println("name bus adapters:")
+		for _, n := range bus.GetNameAdapters() {
+			fmt.Println(" - ", n)
+		}
 		fmt.Println("task names:")
 		for n := range tasks.GetPool() {
 			fmt.Println(" - ", n)
@@ -43,13 +47,21 @@ func main() {
 		return
 	}
 	logger.New(c.Get("logger"))
-	b := bus.New()
+
+	logger.Log.Debugf("Config for bus: %v", c.Get("bus"))
+
+	b := bus.New(c.Get("bus"))
 	for n, s := range tasks.GetPool() {
 		if strings.Index(allowTasks, fmt.Sprintf(",%s,", n)) != -1 {
 
 			logger.Log.Debugf("Config for %s: %v", n, c.Get(n))
 
-			go s.Run(bus.Context{Name: n, Config: c.Get(n), Log: logger.Logger4Handler(n, ""), Bus: b})
+			go bus.SafeRun(s.Run, bus.SafeParams{Retry: 0, Delay: 0})(
+				bus.Context{
+					Name:   n,
+					Config: c.Get(n),
+					Log:    logger.Logger4Handler(n, ""),
+					Bus:    b})
 		}
 	}
 

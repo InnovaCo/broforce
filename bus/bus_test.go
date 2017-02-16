@@ -23,11 +23,14 @@ func TestEventsBus(t *testing.T) {
 
 	t.Run("SafeRun", func(t *testing.T) {
 		Retry := uint32(0)
-		f := func(eventBus *EventsBus, cfg config.ConfigData) error {
+		f := func(ctx Context) error {
 			Retry++
 			return fmt.Errorf("Error number %d", Retry)
 		}
-		SafeRun(f, SafeParams{Retry: 3, Delay: 1})(&EventsBus{}, cfg.Get("test"))
+		SafeRun(f, SafeParams{Retry: 3, Delay: 1})(Context{
+			Name:   "test",
+			Config: cfg.Get("test"),
+			Bus:    &EventsBus{}})
 		if Retry != 4 {
 			t.Errorf("Retry %d != 4", Retry)
 			t.Fail()
