@@ -43,6 +43,9 @@ func main() {
 		return
 	}
 	logger.New(c.Get("logger"))
+
+	logger.Log.Debugf("Config for bus: %v", c.Get("bus"))
+
 	b := bus.New(c.Get("bus"))
 	for n, s := range tasks.GetPool() {
 		if strings.Index(allowTasks, fmt.Sprintf(",%s,", n)) != -1 {

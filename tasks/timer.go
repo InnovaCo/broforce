@@ -12,7 +12,7 @@ func init() {
 
 //config section
 //
-//timeSensor:
+//timer:
 //  interval: 10
 //
 
@@ -45,15 +45,20 @@ func (p *timer) Run(ctx bus.Context) error {
 	tact := Tact{}
 	for {
 		tact.Number, i = i, i+1
-		if event, err := bus.NewEventWithData(bus.NewUUID(), bus.TimerEvent, bus.JsonCoding, tact); err != nil {
+		uuid := bus.NewUUID()
+		if event, err := bus.NewEventWithData(uuid, bus.TimerEvent, bus.JsonCoding, tact); err != nil {
 			ctx.Log.Error(err)
 		} else {
+			ctx.Log.Debugf("Push: %s", uuid)
+
 			if err := ctx.Bus.Publish(*event); err != nil {
 				ctx.Log.Error(err)
 			}
 		}
 		time.Sleep(p.interval)
 	}
-	ctx.Log.Debug("timeSensor Complete")
+
+	ctx.Log.Debug("timer Complete")
+
 	return nil
 }

@@ -1,6 +1,7 @@
 package bus
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -13,35 +14,11 @@ import (
 	"github.com/InnovaCo/broforce/logger"
 )
 
-var once sync.Once
-var instance *EventsBus
-var busConfig = make([]adapterConfig, 0)
-
-type adapterConfig struct {
-	EventTypes string
-	Condition  *regexp.Regexp
-	Adapters   []adapter
-}
-
-func registry(eventsTypes []string, adap adapter) {
-Events:
-	for _, et := range eventsTypes {
-		for _, cfg := range busConfig {
-			if strings.Compare(cfg.EventTypes, et) == 0 {
-				cfg.Adapters = append(cfg.Adapters, adap)
-				adap.Run()
-				continue Events
-			}
-		}
-		if cond, err := regexp.Compile(et); err == nil {
-			busConfig = append(busConfig, adapterConfig{
-				EventTypes: et,
-				Condition:  cond,
-				Adapters:   []adapter{adap}})
-			adap.Run()
-		}
-	}
-}
+var (
+	once      sync.Once
+	instance  *EventsBus
+	busConfig = make([]*adapterConfig, 0)
+)
 
 type Context struct {
 	Func   Handler
@@ -56,15 +33,45 @@ type SafeParams struct {
 	Delay time.Duration
 }
 
-func NewUUID() string {
-	return uuid.NewV4().String()
-}
-
 type Task interface {
 	Run(ctx Context) error
 }
 
 type Handler func(e Event, ctx Context) error
+
+type EventsBus struct {
+}
+
+type adapter interface {
+	Run(cfg config.ConfigData) error
+	Publish(e Event) error
+	Subscribe(subject string, ctx Context)
+}
+
+type adapterConfig struct {
+	Name       string
+	EventTypes []*regexp.Regexp
+	Adapter    adapter
+}
+
+func registry(name string, adap adapter) {
+	for _, acfg := range busConfig {
+		if strings.Compare(acfg.Name, name) == 0 {
+			logger.Log.Errorf("Adapter %s rewrite", name)
+			acfg.Adapter = adap
+			return
+		}
+	}
+	busConfig = append(busConfig, &adapterConfig{
+		Name:       name,
+		EventTypes: make([]*regexp.Regexp, 0),
+		Adapter:    adap})
+	return
+}
+
+func NewUUID() string {
+	return uuid.NewV4().String()
+}
 
 func SafeRun(r func(ctx Context) error, sp SafeParams) func(ctx Context) error {
 	return func(ctx Context) error {
@@ -85,36 +92,43 @@ func SafeRun(r func(ctx Context) error, sp SafeParams) func(ctx Context) error {
 	}
 }
 
-type adapter interface {
-	Run() error
-	Publish(e Event) error
-	Subscribe(subject string, ctx Context)
+func withContextLogger(h Handler) Handler {
+	return func(e Event, ctx Context) error {
+		ctx.Log = logger.Logger4Handler(ctx.Name, e.Trace)
+		defer timeTrack(time.Now(), ctx)
+		return h(e, ctx)
+	}
 }
 
-type EventsBus struct {
+func timeTrack(start time.Time, ctx Context) {
+	elapsed := time.Since(start)
+	ctx.Log.Debugf("func: %s, work time: %s", ctx.Name, elapsed)
 }
 
 func New(cfg config.ConfigData) *EventsBus {
 	once.Do(func() {
-
-		//for a, t := range cfg.GetMap("") {
-		//
-		//}
-
-
-
+		for _, acfg := range busConfig {
+			for _, et := range cfg.GetArrayString(fmt.Sprintf("%s.event-types", acfg.Name)) {
+				if r, err := regexp.Compile(et); err == nil {
+					acfg.EventTypes = append(acfg.EventTypes, r)
+				} else {
+					logger.Log.Errorf("Error: event type %s for adapter % not compile", et, acfg.Name)
+				}
+			}
+			if err := acfg.Adapter.Run(cfg.Get(acfg.Name)); err != nil {
+				logger.Log.Errorf("Error: %v", err)
+			}
+		}
 		instance = &EventsBus{}
 	})
 	return instance
 }
 
 func (p *EventsBus) Publish(e Event) error {
-	for _, cfg := range busConfig {
-		if len(cfg.Condition.FindAllString(e.Subject, -1)) == 1 {
-			for _, a := range cfg.Adapters {
-				if err := a.Publish(e); err != nil {
-					return err
-				}
+	for _, acfg := range busConfig {
+		for _, et := range acfg.EventTypes {
+			if len(et.FindAllString(e.Subject, -1)) == 1 {
+				return acfg.Adapter.Publish(e)
 			}
 		}
 	}
@@ -122,10 +136,14 @@ func (p *EventsBus) Publish(e Event) error {
 }
 
 func (p *EventsBus) Subscribe(subject string, ctx Context) {
-	for _, cfg := range busConfig {
-		if len(cfg.Condition.FindAllString(subject, -1)) == 1 {
-			for _, a := range cfg.Adapters {
-				a.Subscribe(subject, ctx)
+	for _, acfg := range busConfig {
+		for _, et := range acfg.EventTypes {
+			if len(et.FindAllString(subject, -1)) == 1 {
+				ctx.Func = withContextLogger(ctx.Func)
+				if ctx.Log == nil {
+					ctx.Log = logger.Logger4Handler(ctx.Name, "")
+				}
+				acfg.Adapter.Subscribe(subject, ctx)
 			}
 		}
 	}

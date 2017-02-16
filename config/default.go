@@ -15,8 +15,8 @@ func init() {
 }
 
 type defaultConfig struct {
-	config gabs.Container
-	path   string
+	data gabs.Container
+	path string
 }
 
 func (p *defaultConfig) Init(path string) error {
@@ -29,13 +29,13 @@ func (p *defaultConfig) Init(path string) error {
 		return fmt.Errorf("Error on parse file `%s`: %v!", p.path, err)
 	} else {
 		g, _ := gabs.ParseJSON(jsonData)
-		p.config = *g
+		p.data = *g
 	}
 	return nil
 }
 
 func (p *defaultConfig) Get(name string) ConfigData {
-	if c := p.config.Search(name); c != nil {
+	if c := p.data.Search(name); c != nil {
 		return ConfigData(&defaultConfigData{data: c})
 	} else {
 		return ConfigData(&defaultConfigData{data: &gabs.Container{}})
@@ -47,7 +47,15 @@ type defaultConfigData struct {
 }
 
 func (p *defaultConfigData) String() string {
-	return p.data.Data().(string)
+	return p.data.String()
+}
+
+func (p *defaultConfigData) Get(name string) ConfigData {
+	if c := p.data.Search(name); c != nil {
+		return ConfigData(&defaultConfigData{data: c})
+	} else {
+		return ConfigData(&defaultConfigData{data: &gabs.Container{}})
+	}
 }
 
 func (p *defaultConfigData) Exist(path string) bool {
@@ -55,7 +63,11 @@ func (p *defaultConfigData) Exist(path string) bool {
 }
 
 func (p *defaultConfigData) GetString(path string) string {
-	return fmt.Sprintf("%v", p.data.Path(path).Data())
+	if len(strings.TrimSpace(path)) == 0 {
+		return p.data.Data().(string)
+	} else {
+		return fmt.Sprintf("%v", p.data.Path(path).Data())
+	}
 }
 
 func (p *defaultConfigData) Search(hierarchy ...string) string {
@@ -102,7 +114,6 @@ func (p *defaultConfigData) GetBool(path string) bool {
 
 func (p *defaultConfigData) GetArray(path string) []ConfigData {
 	out := make([]ConfigData, 0)
-
 	var data *gabs.Container
 
 	if len(strings.TrimSpace(path)) == 0 {
@@ -110,7 +121,6 @@ func (p *defaultConfigData) GetArray(path string) []ConfigData {
 	} else {
 		data = p.data.Path(path)
 	}
-
 	arr, err := data.Children()
 	if err != nil {
 		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
@@ -124,7 +134,6 @@ func (p *defaultConfigData) GetArray(path string) []ConfigData {
 
 func (p *defaultConfigData) GetArrayString(path string) []string {
 	out := make([]string, 0)
-
 	var data *gabs.Container
 
 	if len(strings.TrimSpace(path)) == 0 {
@@ -132,7 +141,6 @@ func (p *defaultConfigData) GetArrayString(path string) []string {
 	} else {
 		data = p.data.Path(path)
 	}
-
 	arr, err := data.Children()
 	if err != nil {
 		fmt.Errorf("Error get array `%v` from: %v", path, p.data.Path(path).Data())
@@ -146,7 +154,6 @@ func (p *defaultConfigData) GetArrayString(path string) []string {
 
 func (p *defaultConfigData) GetMap(path string) map[string]ConfigData {
 	out := make(map[string]ConfigData)
-
 	var data *gabs.Container
 
 	if len(strings.TrimSpace(path)) == 0 {
@@ -154,7 +161,6 @@ func (p *defaultConfigData) GetMap(path string) map[string]ConfigData {
 	} else {
 		data = p.data.Path(path)
 	}
-
 	mmap, err := data.ChildrenMap()
 	if err != nil {
 		fmt.Errorf("Error get map '%v' from: %v. Error: %s", path, p.data.Path(path).Data(), err)
