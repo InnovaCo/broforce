@@ -25,6 +25,10 @@ func main() {
 	kingpin.Parse()
 
 	if *show {
+		fmt.Println("name bus adapters:")
+		for _, n := range bus.GetNameAdapters() {
+			fmt.Println(" - ", n)
+		}
 		fmt.Println("task names:")
 		for n := range tasks.GetPool() {
 			fmt.Println(" - ", n)

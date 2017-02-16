@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	once      sync.Once
-	instance  *EventsBus
-	busConfig = make([]*adapterConfig, 0)
+	once        sync.Once
+	instance    *EventsBus
+	busAdapters = make([]*adapterConfig, 0)
 )
 
 type Context struct {
@@ -55,18 +55,26 @@ type adapterConfig struct {
 }
 
 func registry(name string, adap adapter) {
-	for _, acfg := range busConfig {
+	for _, acfg := range busAdapters {
 		if strings.Compare(acfg.Name, name) == 0 {
 			logger.Log.Errorf("Adapter %s rewrite", name)
 			acfg.Adapter = adap
 			return
 		}
 	}
-	busConfig = append(busConfig, &adapterConfig{
+	busAdapters = append(busAdapters, &adapterConfig{
 		Name:       name,
 		EventTypes: make([]*regexp.Regexp, 0),
 		Adapter:    adap})
 	return
+}
+
+func GetNameAdapters() []string {
+	result := make([]string, 0)
+	for _, acfg := range busAdapters {
+		result = append(result, acfg.Name)
+	}
+	return result
 }
 
 func NewUUID() string {
@@ -107,7 +115,7 @@ func timeTrack(start time.Time, ctx Context) {
 
 func New(cfg config.ConfigData) *EventsBus {
 	once.Do(func() {
-		for _, acfg := range busConfig {
+		for _, acfg := range busAdapters {
 			for _, et := range cfg.GetArrayString(fmt.Sprintf("%s.event-types", acfg.Name)) {
 				if r, err := regexp.Compile(et); err == nil {
 					acfg.EventTypes = append(acfg.EventTypes, r)
@@ -125,7 +133,7 @@ func New(cfg config.ConfigData) *EventsBus {
 }
 
 func (p *EventsBus) Publish(e Event) error {
-	for _, acfg := range busConfig {
+	for _, acfg := range busAdapters {
 		for _, et := range acfg.EventTypes {
 			if len(et.FindAllString(e.Subject, -1)) == 1 {
 				return acfg.Adapter.Publish(e)
@@ -136,7 +144,7 @@ func (p *EventsBus) Publish(e Event) error {
 }
 
 func (p *EventsBus) Subscribe(subject string, ctx Context) {
-	for _, acfg := range busConfig {
+	for _, acfg := range busAdapters {
 		for _, et := range acfg.EventTypes {
 			if len(et.FindAllString(subject, -1)) == 1 {
 				ctx.Func = withContextLogger(ctx.Func)
